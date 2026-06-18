@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f7d4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FRISCHPLANT">
+<title>FRISCHPLANT</title>
+
+<!-- ====================================================================
+     KONFIGURÁCIÓ — élesítéshez töltsd ki. Üresen = DEMÓ (nem ment).
+     ADMIN_PASS üresen hagyva a jelszó: "admin"
+     ==================================================================== -->
+<script>
+const CONFIG = {
+  SUPABASE_URL:      "https://nofkgjddleywgmueeqem.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_Zr6GZMgISXNPeszyJZm2OQ_S6AmIaZM",
+  LOGIN_EMAIL:       "belepes@frischplant.online",   // a közös belépési fiók e-mailje (a jelszót a Supabase-ban állítod be)
+  ADMIN_PASS:        "26HolaPinto++LF",   // az admin nézet jelszava (üres = "admin")
+  YEAR:  2026,
+  MONTH: 6                 // június
+};
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#f5f3ec; --surface:#ffffff; --ink:#1d2922; --muted:#6c766e;
+  --accent:#2f7d4f; --accent-d:#256340; --accent-soft:#e7f0e9;
+  --line:#e4e1d8; --line-2:#eeece4; --field:#fcfcfa;
+  --miss:#d24b4b; --miss-soft:#fbeceb;
+  --r:16px; --sh:0 1px 2px rgba(29,41,34,.05), 0 8px 24px -16px rgba(29,41,34,.25);
+}
+[data-theme="dark"]{
+  --bg:#12171a; --surface:#1b2226; --ink:#e9ede9; --muted:#98a39b;
+  --accent:#4fa873; --accent-d:#73c293; --accent-soft:rgba(79,168,115,.16);
+  --line:#2a3338; --line-2:#222a2e; --field:#161c1f;
+  --miss:#e16a6a; --miss-soft:rgba(225,106,106,.15);
+  --sh:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(120% 80% at 100% 0%,rgba(47,125,79,.05),transparent 60%),radial-gradient(100% 70% at 0% 100%,rgba(47,125,79,.04),transparent 55%);
+  min-height:100dvh;padding:0 16px env(safe-area-inset-bottom) 16px;transition:background .25s,color .25s}
+.wrap{max-width:720px;margin:0 auto;position:relative;z-index:1}
+
+.forest{position:fixed;left:0;right:0;bottom:0;height:40vh;max-height:360px;z-index:0;pointer-events:none;overflow:hidden;opacity:.06;color:var(--accent)}
+.forest svg{width:100%;height:100%;display:block}
+[data-theme="dark"] .forest{opacity:.10}
+
+header{padding:24px 2px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:flex-end;gap:12px;min-width:0}
+.title-h{font-family:"Fraunces",serif;font-weight:700;font-size:26px;letter-spacing:-.01em;line-height:1;margin:0}
+.wm .sub{margin-top:4px;font-size:13px;color:var(--muted);text-transform:lowercase;letter-spacing:.02em}
+.bk-mark{width:54px;height:auto;flex:none}
+.bk-hero{width:86px;height:auto;display:block;margin:0 auto 14px}
+@media(max-width:430px){.title-h{font-size:22px}.bk-mark{width:44px}.who{font-size:12px}}
+.bk-breath{transform-box:fill-box;transform-origin:50% 95%;animation:bk-breath 4s ease-in-out infinite}
+.bk-eye{transform-box:fill-box;transform-origin:center;animation:bk-blink 6s ease-in-out infinite}
+@keyframes bk-breath{0%,100%{transform:scale(1,1)}50%{transform:scale(1.02,.99)}}
+@keyframes bk-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}98%{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){.bk-breath,.bk-eye{animation:none}}
+.hd-right{flex:none;display:flex;align-items:flex-start;gap:10px}
+.icon-btn{appearance:none;width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;transition:border-color .15s,transform .1s}
+.icon-btn:active{transform:scale(.94)}
+.who{text-align:right;font-size:12.5px;color:var(--muted);max-width:160px}
+.badge{display:inline-block;margin-top:4px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-d);font-weight:600;font-size:11.5px}
+.linkbtn{appearance:none;border:0;background:none;color:var(--accent-d);font:inherit;font-size:12.5px;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+
+.demo-bar{background:var(--accent-soft);color:var(--accent-d);border-radius:12px;padding:9px 13px;font-size:12.5px;margin:2px 0 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.toggle{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;gap:3px}
+.toggle button{appearance:none;border:0;background:none;font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer;color:var(--muted)}
+.toggle button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.demo-bar .toggle{margin-left:auto}
+.adminnav{display:flex;gap:8px;align-items:center;margin:2px 0 16px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:14px;overflow:hidden;transition:border-color .2s}
+.card.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--sh)}
+.card.missed{border-color:var(--miss);box-shadow:0 0 0 1px var(--miss),var(--sh)}
+.c-head{display:flex;align-items:center;gap:14px;padding:15px 17px 6px}
+.daynum{font-family:"Fraunces",serif;font-weight:600;font-size:34px;line-height:.9}
+.today .daynum{color:var(--accent-d)} .missed .daynum{color:var(--miss)}
+.dmeta{min-width:0}.dweek{font-weight:600;font-size:15px}.ddate{font-size:12.5px;color:var(--muted)}
+.tag{margin-left:auto;flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+.tag.now{background:var(--accent);color:#fff}.tag.miss{background:var(--miss);color:#fff}
+
+.edit-pad{padding:6px 16px 15px}
+.grp{margin-top:14px}
+.grp-lbl{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 2px 7px}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:9px}
+.hf label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px 2px}
+.hf input{width:100%;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 11px;min-height:44px;transition:border-color .15s,box-shadow .15s,background .15s}
+.hf input:focus{outline:0;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+textarea.note{width:100%;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:11px;padding:11px 12px;min-height:58px;line-height:1.45;resize:vertical;transition:border-color .15s,box-shadow .15s,background .15s}
+textarea.note:focus{outline:0;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--line-2)}
+.subtotal{margin-top:9px;font-size:13px;font-weight:600;padding:7px 12px;border-radius:9px;display:inline-block;background:var(--accent-soft);color:var(--accent-d)}
+.saverow{display:flex;align-items:center;gap:12px;margin-top:16px}
+.status{font-size:12px;color:var(--muted)}.status.ok{color:var(--accent-d)}.status.err{color:var(--miss)}
+.locknote{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:13px;color:var(--miss);background:var(--miss-soft);padding:10px 12px;border-radius:10px}
+.btn{appearance:none;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;padding:10px 20px;border-radius:11px;cursor:pointer;transition:background .15s,transform .1s}
+.btn:hover{background:var(--accent-d)}.btn:active{transform:scale(.97)}
+.btn.save{margin-left:auto}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+
+.section-lbl{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 2px 10px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:13px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 2px rgba(29,41,34,.04);transition:border-color .2s}
+.row.today{border-color:var(--accent)} .row.missed{border-color:var(--miss)}
+.rowbtn{width:100%;appearance:none;border:0;background:none;font:inherit;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 14px;text-align:left;color:var(--ink)}
+.rdn{font-family:"Fraunces",serif;font-weight:600;font-size:21px;width:32px;flex:none;text-align:center;line-height:1}
+.row.today .rdn{color:var(--accent-d)} .row.missed .rdn{color:var(--miss)}
+.rweek{font-weight:600;font-size:14px}.rdate{font-size:12px;color:var(--muted)}
+.todaypill{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-d);background:var(--accent-soft);border-radius:999px;padding:3px 7px;margin-left:8px}
+.misspill{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--miss);border-radius:999px;padding:3px 7px;margin-left:8px}
+.hrs{margin-left:auto;flex:none;font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}.hrs.on{color:var(--accent-d)}
+.chev{flex:none;color:var(--muted);opacity:.6;transition:transform .2s;margin-left:8px}.row.open .chev{transform:rotate(180deg)}
+.row .edit-pad{border-top:1px solid var(--line-2);display:none}.row.open .edit-pad{display:block}
+
+.sum-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px 17px;margin-bottom:12px}
+.sum-card h4{margin:0 0 12px;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.big-num{font-family:"Fraunces",serif;font-weight:700;font-size:42px;line-height:1;color:var(--accent-d)}
+.big-sub{font-size:13px;color:var(--muted);margin-top:5px}
+.quad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+@media(max-width:460px){.quad{grid-template-columns:repeat(2,1fr)}}
+.quad .q{background:var(--field);border:1px solid var(--line-2);border-radius:11px;padding:11px;text-align:center}
+.quad .q .l{font-size:12px;color:var(--muted);font-weight:600}
+.quad .q .v{font-family:"Fraunces",serif;font-size:22px;font-weight:600;margin-top:3px}
+.kv{display:flex;align-items:center;gap:10px;margin:9px 0}
+.kv .name{font-size:13.5px;min-width:120px;flex:none}
+.kv .bar{flex:1;height:9px;border-radius:6px;background:var(--line-2);overflow:hidden}
+.kv .bar > i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.kv .val{font-size:12.5px;color:var(--muted);min-width:88px;text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.tiles .t{background:var(--field);border:1px solid var(--line-2);border-radius:11px;padding:11px 12px}
+.tiles .t .l{font-size:11.5px;color:var(--muted);font-weight:600}
+.tiles .t .v{font-size:18px;font-weight:600;margin-top:3px;font-family:"Fraunces",serif}
+.sum-total{font-size:13px;color:var(--muted);margin-top:10px;text-align:right}
+
+.login{max-width:380px;margin:7vh auto 0;text-align:center}
+.login h1{font-family:"Fraunces",serif;font-weight:700;font-size:30px;margin:0 0 6px}
+.login p{color:var(--muted);font-size:14px;margin:0 0 22px}
+.login input{width:100%;font:inherit;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);margin-bottom:10px}
+.login input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.login .btn{width:100%}
+.note-sm{font-size:12.5px;color:var(--muted);margin-top:14px}
+.foot{text-align:center;color:var(--muted);opacity:.7;font-size:11.5px;padding:18px 0 8px;letter-spacing:.02em}
+
+.modal-bg{position:fixed;inset:0;background:rgba(15,20,18,.55);display:grid;place-items:center;padding:20px;z-index:50}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);max-width:380px;width:100%;padding:22px 22px 18px}
+.modal h3{font-family:"Fraunces",serif;font-weight:600;font-size:21px;margin:0 0 8px}
+.modal p{font-size:14px;color:var(--ink);margin:0 0 16px;line-height:1.5}
+.modal input{width:100%;font:inherit;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:var(--field);color:var(--ink);margin-bottom:8px}
+.modal input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.m-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="forest" aria-hidden="true">
+<svg viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+ <g fill="currentColor">
+   <rect x="113" y="190" width="14" height="130" rx="6"/><circle cx="120" cy="168" r="46"/><circle cx="85" cy="190" r="34"/><circle cx="155" cy="190" r="34"/><circle cx="120" cy="132" r="33"/>
+   <rect x="330" y="148" width="16" height="172" rx="7"/><circle cx="338" cy="126" r="54"/><circle cx="296" cy="150" r="40"/><circle cx="380" cy="150" r="40"/><circle cx="338" cy="84" r="40"/>
+   <rect x="560" y="222" width="12" height="98" rx="5"/><circle cx="566" cy="206" r="38"/><circle cx="536" cy="222" r="27"/><circle cx="596" cy="222" r="27"/>
+   <rect x="792" y="174" width="15" height="146" rx="6"/><circle cx="799" cy="154" r="50"/><circle cx="761" cy="176" r="36"/><circle cx="837" cy="176" r="36"/><circle cx="799" cy="110" r="36"/>
+   <rect x="1012" y="226" width="12" height="94" rx="5"/><circle cx="1018" cy="212" r="36"/><circle cx="990" cy="226" r="26"/><circle cx="1046" cy="226" r="26"/>
+   <rect x="1222" y="152" width="16" height="168" rx="7"/><circle cx="1230" cy="130" r="52"/><circle cx="1190" cy="154" r="38"/><circle cx="1270" cy="154" r="38"/><circle cx="1230" cy="90" r="37"/>
+   <rect x="1392" y="226" width="12" height="94" rx="5"/><circle cx="1398" cy="212" r="33"/><circle cx="1372" cy="226" r="24"/>
+ </g>
+</svg>
+</div>
+
+<div class="wrap" id="app"></div>
+
+<div class="modal-bg hidden" id="modalbg">
+  <div class="modal"><h3>Mentés megerősítése</h3><p id="m-text"></p>
+    <div class="m-actions"><button class="btn ghost" id="m-cancel">Mégse</button><button class="btn" id="m-ok">Igen, mentem</button></div>
+  </div>
+</div>
+<div class="modal-bg hidden" id="passbg">
+  <div class="modal"><h3>Admin belépés</h3><p>Add meg az admin jelszót.</p>
+    <input id="passinput" type="password" autocomplete="off" placeholder="jelszó">
+    <div class="note-sm" id="passmsg"></div>
+    <div class="m-actions"><button class="btn ghost" id="pass-cancel">Mégse</button><button class="btn" id="pass-ok">Belépés</button></div>
+  </div>
+</div>
+
+<script>
+/* ---------- segéd ---------- */
+const $ = (s,r=document)=>r.querySelector(s);
+const pad = n => String(n).padStart(2,"0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const esc = s => (s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const huWeek = d => new Intl.DateTimeFormat("hu-HU",{weekday:"long"}).format(d);
+const huFull = d => new Intl.DateTimeFormat("hu-HU",{year:"numeric",month:"long",day:"numeric"}).format(d);
+const huMonth= (y,m)=> new Intl.DateTimeFormat("hu-HU",{month:"long"}).format(new Date(y,m-1,1));
+
+/* két FÜGGETLEN rovat */
+const ACT = ["r_locsolas","r_tanyerozas","r_takaritas","r_karozas","r_felmeres","r_qta","r_kerteszeti"]; // tevékenységek
+const ADMINK = "r_admin";                                   // adminisztráció (csak admin)
+const HEADS = ["head_a","head_b","head_c","head_d"];        // négy önálló munkatárs, függetlenül kitölthető (A is)
+const ALL = [...ACT,ADMINK,...HEADS];
+const LABEL = {r_locsolas:"locsolás",r_tanyerozas:"tányérozás",r_takaritas:"takarítás",r_karozas:"karózás",
+  r_felmeres:"felmérés",r_qta:"QTA",r_kerteszeti:"kertészeti munka",r_admin:"adminisztráció",
+  head_a:"A",head_b:"B",head_c:"C",head_d:"D"};
+const EFF_PASS = CONFIG.ADMIN_PASS || "admin";
+
+const blank = () => { const o={note:""}; ALL.forEach(k=>o[k]=""); return o; };
+const parseH = v => { if(!v) return 0; const n=parseFloat(v.toString().replace(",",".").trim()); return isNaN(n)?0:n; };
+const fmt = n => (Math.round(n*100)/100).toString().replace(".",",");
+const workSum = e => ACT.reduce((s,k)=>s+parseH(e[k]),0);   // tevékenységek összesen
+const headSum = e => HEADS.reduce((s,k)=>s+parseH(e[k]),0); // fejenkénti összesen (A+B+C+D)
+const adminH = e => parseH(e[ADMINK]);
+const hasHours = e => workSum(e)>0 || headSum(e)>0 || adminH(e)>0;
+
+let bkSeq=0;
+function brekusz(viewBox,cls){ const id="bk"+(++bkSeq);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" class="${cls}" role="img" aria-label="Brekusz">
+    <defs>
+      <radialGradient id="body${id}" cx="50%" cy="40%" r="65%"><stop offset="0%" stop-color="#aecb88"/><stop offset="100%" stop-color="#7ba35a"/></radialGradient>
+      <radialGradient id="belly${id}" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#eef2dc"/><stop offset="100%" stop-color="#d0dcb2"/></radialGradient>
+    </defs>
+    <g class="bk-breath">
+    <ellipse cx="18" cy="58" rx="11" ry="7" fill="#6b8f4a"/>
+    <ellipse cx="82" cy="58" rx="11" ry="7" fill="#6b8f4a"/>
+    <ellipse cx="50" cy="48" rx="30" ry="22" fill="url(#body${id})"/>
+    <ellipse cx="50" cy="55" rx="18" ry="12" fill="url(#belly${id})"/>
+    <circle cx="34" cy="25" r="14" fill="url(#body${id})"/>
+    <circle cx="66" cy="25" r="14" fill="url(#body${id})"/>
+    <g class="bk-eye"><circle cx="34" cy="22" r="10" fill="#fefcf6"/><circle cx="36" cy="23" r="4.5" fill="#1a1816"/><circle cx="37.5" cy="21" r="1.8" fill="#fefcf6"/></g>
+    <g class="bk-eye"><circle cx="66" cy="22" r="10" fill="#fefcf6"/><circle cx="64" cy="23" r="4.5" fill="#1a1816"/><circle cx="65.5" cy="21" r="1.8" fill="#fefcf6"/></g>
+    <path d="M 41 46 Q 50 53 59 46" stroke="#1a1816" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="33" cy="66" rx="6" ry="4" fill="#7ba35a"/>
+    <ellipse cx="67" cy="66" rx="6" ry="4" fill="#7ba35a"/>
+    <circle cx="29.5" cy="67" r="1.4" fill="#6b8f4a"/><circle cx="33" cy="68.5" r="1.4" fill="#6b8f4a"/><circle cx="36.5" cy="67" r="1.4" fill="#6b8f4a"/>
+    <circle cx="63.5" cy="67" r="1.4" fill="#6b8f4a"/><circle cx="67" cy="68.5" r="1.4" fill="#6b8f4a"/><circle cx="70.5" cy="67" r="1.4" fill="#6b8f4a"/>
+    <ellipse cx="22" cy="40" rx="4" ry="2.5" fill="#e89868" opacity="0.45"/>
+    <ellipse cx="78" cy="40" rx="4" ry="2.5" fill="#e89868" opacity="0.45"/>
+    </g>
+  </svg>`; }
+
+const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, openDate:null, theme:"light", pending:null };
+
+/* ---------- dátum ---------- */
+const Y=CONFIG.YEAR, M=CONFIG.MONTH;
+const monthStart=new Date(Y,M-1,1), daysInMonth=new Date(Y,M,0).getDate();
+const now=new Date();
+const todayD=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+const yestD=new Date(todayD); yestD.setDate(todayD.getDate()-1);
+const TODAY=iso(todayD), YEST=iso(yestD);
+const yesterdayInMonth = yestD>=monthStart;
+const isMissed = date => { const d=new Date(date+"T00:00:00"); return d<todayD && !hasHours(state.entries[date]||blank()); };
+
+/* ---------- store ---------- */
+async function loadAll(){
+  if(state.mode!=="live") return;
+  const first=`${Y}-${pad(M)}-01`, last=`${Y}-${pad(M)}-${pad(daysInMonth)}`;
+  const {data,error}=await state.client.from("entries").select("*").gte("entry_date",first).lte("entry_date",last);
+  state.entries={};
+  if(!error && data) data.forEach(r=>{ const e=blank(); ALL.forEach(k=>e[k]=r[k]||""); e.note=r.note||""; state.entries[r.entry_date]=e; });
+}
+async function save(date){
+  const e = state.entries[date] || (state.entries[date]=blank());
+  if(state.mode==="live"){
+    const row={entry_date:date,note:e.note,updated_by:state.email,updated_at:new Date().toISOString()};
+    ALL.forEach(k=>row[k]=e[k]);
+    const {error}=await state.client.from("entries").upsert(row,{onConflict:"entry_date"});
+    setStatus(date, error?"nem mentődött":"mentve ✓", error?"err":"ok");
+  } else setStatus(date,"mentve ✓ (demó)","ok");
+  render();
+}
+function setStatus(date,txt,cls){document.querySelectorAll(`[data-status="${date}"]`).forEach(el=>{el.textContent=txt;el.className="status "+(cls||"");});}
+
+/* ---------- mezők ---------- */
+function hf(date,k,dis){const e=state.entries[date]||blank();
+  return `<div class="hf"><label>${LABEL[k]}</label><input type="text" inputmode="decimal" autocomplete="off" data-date="${date}" data-field="${k}" value="${esc(e[k])}" placeholder="0"${dis||""}></div>`;}
+function editorHTML(date,locked){
+  const e=state.entries[date]||blank(); const dis = locked?" disabled":"";
+  const adminBlock = (!locked && state.role==="admin")
+    ? `<div class="grp"><div class="grp-lbl">Adminisztráció (csak admin)</div><div class="hgrid">${hf(date,ADMINK,dis)}</div></div>` : "";
+  const tail = locked
+    ? `<div class="locknote">🔒 Előbb töltsd ki és mentsd a tegnapi napot.</div>`
+    : `<div class="saverow"><span class="status" data-status="${date}"></span><button class="btn save" data-save="${date}">Mentés</button></div>`;
+  return `
+    <div class="grp"><div class="grp-lbl">Óraszám tevékenységenként</div><div class="hgrid">${ACT.map(k=>hf(date,k,dis)).join("")}</div>
+      <div class="subtotal" data-acttotal="${date}">Tevékenységek összesen: ${fmt(workSum(e))} óra</div></div>
+    <div class="grp"><div class="grp-lbl">Fejenkénti munkaóra</div><div class="hgrid">${HEADS.map(k=>hf(date,k,dis)).join("")}</div>
+      <div class="subtotal" data-headtotal="${date}">Fejenkénti összesen: ${fmt(headSum(e))} óra</div></div>
+    ${adminBlock}
+    <div class="grp"><div class="grp-lbl">Megjegyzés</div><textarea class="note" data-date="${date}" data-field="note" rows="2"${dis}>${esc(e.note)}</textarea></div>
+    ${tail}`;
+}
+
+/* ---------- fejléc + sávok ---------- */
+function headerHTML(){
+  const themeBtn=`<button class="icon-btn" id="theme" title="téma">${state.theme==="dark"?ICON_SUN:ICON_MOON}</button>`;
+  let info;
+  if(state.mode==="live"){
+    info = state.role==="admin"
+      ? `<div class="who">${esc(state.email||"")}<br><span class="badge">adminisztrátor</span><br><button class="linkbtn" id="exitadmin">vissza munkatárs nézethez</button><br><button class="linkbtn" id="logout">kijelentkezés</button></div>`
+      : `<div class="who">${esc(state.email||"")}<br><span class="badge">munkatárs</span><br><button class="linkbtn" id="goadmin">admin belépés →</button><br><button class="linkbtn" id="logout">kijelentkezés</button></div>`;
+  } else info = `<div class="who"><span class="badge">demó mód</span></div>`;
+  return `<header><div class="brand"><div class="wm"><div class="title-h">FRISCHPLANT</div><div class="sub">${Y} · ${huMonth(Y,M)}</div></div>${brekusz("0 0 100 71","bk-mark")}</div>
+    <div class="hd-right">${themeBtn}${info}</div></header>`;
+}
+function demoBar(){ if(state.mode==="live") return "";
+  return `<div class="demo-bar">Kipróbálási mód, az adat nem mentődik.
+    <span class="toggle"><button data-role="user" aria-pressed="${state.role==='user'}">munkatárs</button><button data-role="admin" aria-pressed="${state.role==='admin'}">admin 🔒</button></span></div>`;}
+function adminNav(active){
+  return `<div class="adminnav"><span class="toggle">
+    <button data-tab="days" aria-pressed="${active==='days'}">Napok</button>
+    <button data-tab="summary" aria-pressed="${active==='summary'}">Összesítés</button></span></div>`;}
+
+const ICON_MOON=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>`;
+const ICON_SUN=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg>`;
+
+/* ---------- nézetek ---------- */
+function dayCard(date,kind,locked){
+  const d=new Date(date+"T00:00:00");
+  const tag = kind==="now"?`<span class="tag now">ma</span>`:`<span class="tag miss">elmaradt</span>`;
+  return `<div class="card ${kind==='now'?'today':'missed'}"><div class="c-head"><div class="daynum">${d.getDate()}</div>
+      <div class="dmeta"><div class="dweek">${huWeek(d)}</div><div class="ddate">${huFull(d)}</div></div>${tag}</div>
+    <div class="edit-pad">${editorHTML(date,locked)}</div></div>`;
+}
+function userView(){
+  let h=headerHTML()+demoBar();
+  const yMissing = yesterdayInMonth && !hasHours(state.entries[YEST]||blank());
+  if(yMissing){ h+=dayCard(YEST,"prev",false); h+=dayCard(TODAY,"now",true); }
+  else h+=dayCard(TODAY,"now",false);
+  h+=`<div class="foot">FRISCHPLANT · ${huMonth(Y,M)} próbahónap</div>`;
+  return h;
+}
+function adminRow(n){
+  const date=`${Y}-${pad(M)}-${pad(n)}`, d=new Date(date+"T00:00:00");
+  const e=state.entries[date]||blank(), tot=(headSum(e)>0?headSum(e):workSum(e)), open=state.openDate===date;
+  const today=date===TODAY, missed=isMissed(date);
+  const pill = today?'<span class="todaypill">ma</span>':(missed?'<span class="misspill">elmaradt</span>':'');
+  return `<div class="row ${open?'open':''} ${today?'today':''} ${missed?'missed':''}" data-row="${date}">
+    <button class="rowbtn" data-toggle="${date}"><span class="rdn">${n}</span>
+      <span class="dmeta"><span class="rweek">${huWeek(d)}</span>${pill}<br><span class="rdate">${huFull(d)}</span></span>
+      <span class="hrs ${tot>0?'on':''}">${tot>0?fmt(tot)+' ó':'—'}</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button><div class="edit-pad">${open?editorHTML(date,false):""}</div></div>`;
+}
+function adminView(){
+  let rows=""; for(let n=1;n<=daysInMonth;n++) rows+=adminRow(n);
+  return headerHTML()+demoBar()+adminNav('days')+`<div class="section-lbl">teljes hónap · ${daysInMonth} nap</div>`+rows+`<div class="foot">FRISCHPLANT · adminisztrátori nézet</div>`;
+}
+function monthAgg(){
+  const actBy={}; ACT.concat(ADMINK).forEach(k=>actBy[k]=0);
+  let workTotal=0, adminTotal=0, hA=0,hB=0,hC=0,hD=0, filledDays=0, missedDays=0;
+  for(let n=1;n<=daysInMonth;n++){
+    const date=`${Y}-${pad(M)}-${pad(n)}`, e=state.entries[date]||blank();
+    workTotal+=workSum(e);
+    ACT.forEach(k=>actBy[k]+=parseH(e[k]));
+    actBy[ADMINK]+=adminH(e); adminTotal+=adminH(e);
+    hA+=parseH(e.head_a); hB+=parseH(e.head_b); hC+=parseH(e.head_c); hD+=parseH(e.head_d);
+    const dD=new Date(date+"T00:00:00");
+    if(hasHours(e)) filledDays++; else if(dD<todayD) missedDays++;
+  }
+  const crew=hA+hB+hC+hD;
+  return {actBy,workTotal,adminTotal,hA,hB,hC,hD,crew,filledDays,missedDays};
+}
+function summaryView(){
+  const a=monthAgg();
+  const acts=ACT.concat(ADMINK).map(k=>({label:LABEL[k],h:a.actBy[k]}));
+  const denom=a.workTotal+a.adminTotal, maxAct=Math.max(0,...acts.map(x=>x.h));
+  const topAct=ACT.map(k=>({label:LABEL[k],h:a.actBy[k]})).reduce((p,c)=>c.h>p.h?c:p,{h:0,label:'—'});
+  const avg=a.filledDays?a.crew/a.filledDays:0;
+  const heads=[["A",a.hA],["B",a.hB],["C",a.hC],["D",a.hD]].map(([l,v])=>`<div class="q"><div class="l">${l}</div><div class="v">${fmt(v)}</div></div>`).join("");
+  const bars=acts.map(x=>{const w=maxAct>0?Math.round(x.h/maxAct*100):0;const p=denom>0?Math.round(x.h/denom*100):0;
+    return `<div class="kv"><span class="name">${x.label}</span><span class="bar"><i style="width:${w}%"></i></span><span class="val">${fmt(x.h)} ó · ${p}%</span></div>`;}).join("");
+  return headerHTML()+demoBar()+adminNav('summary')+
+    `<div class="sum-card"><h4>Fejenkénti munkaóra (havi) — A–D</h4><div class="quad">${heads}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>
+     <div class="sum-card"><h4>Tevékenység szerinti összóraszám</h4>${bars}<div class="sum-total">összesen ${fmt(denom)} óra</div></div>
+     <div class="sum-card"><h4>Statisztika</h4><div class="tiles">
+       <div class="t"><div class="l">Kitöltött napok</div><div class="v">${a.filledDays} / ${daysInMonth}</div></div>
+       <div class="t"><div class="l">Elmaradt napok</div><div class="v">${a.missedDays}</div></div>
+       <div class="t"><div class="l">Fejenkénti összes (A–D)</div><div class="v">${fmt(a.crew)} ó</div></div>
+       <div class="t"><div class="l">Tevékenységek összesen</div><div class="v">${fmt(a.workTotal)} ó</div></div>
+       <div class="t"><div class="l">Átlag fejenkénti / nap</div><div class="v">${fmt(avg)} ó</div></div>
+       <div class="t"><div class="l">Legtöbb idő (tev.)</div><div class="v" style="font-size:15px">${topAct.h>0?topAct.label:'—'}</div></div>
+       <div class="t"><div class="l">Adminisztráció</div><div class="v">${fmt(a.adminTotal)} ó</div></div>
+     </div></div>
+     <div class="foot">FRISCHPLANT · havi összesítő, csak admin</div>`;
+}
+function loginView(){
+  return headerHTML()+`<div class="login">${brekusz("0 0 100 80","bk-hero")}<h1>FRISCHPLANT</h1>
+    <p>Lépj be a jelszóval.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="jelszó">
+    <button class="btn" id="signin">Belépés</button>
+    <div class="note-sm" id="loginmsg"></div></div>`;
+}
+
+/* ---------- render + események ---------- */
+function render(){
+  const app=$("#app");
+  if(state.mode==="live" && !state.email){ app.innerHTML=loginView(); bindTop(); bindLogin(); return; }
+  app.innerHTML = state.role==="admin" ? (state.adminTab==="summary"?summaryView():adminView()) : userView();
+  bindTop(); bindMain();
+}
+function bindTop(){const t=$("#theme"); if(t) t.onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-theme",state.theme); t.innerHTML=state.theme==="dark"?ICON_SUN:ICON_MOON;};}
+function bindLogin(){const go=async()=>{const pw=$("#pw").value;
+    if(!pw){$("#loginmsg").textContent="Add meg a jelszót.";return;}
+    $("#loginmsg").textContent="Belépés…";
+    const {error}=await state.client.auth.signInWithPassword({email:CONFIG.LOGIN_EMAIL,password:pw});
+    if(error) $("#loginmsg").textContent="Hibás jelszó.";};
+  $("#signin").onclick=go; $("#pw").addEventListener("keydown",e=>{if(e.key==="Enter") go();});}
+function updateTotals(date){const e=state.entries[date]||blank();
+  document.querySelectorAll(`[data-acttotal="${date}"]`).forEach(el=>el.textContent=`Tevékenységek összesen: ${fmt(workSum(e))} óra`);
+  document.querySelectorAll(`[data-headtotal="${date}"]`).forEach(el=>el.textContent=`Fejenkénti összesen: ${fmt(headSum(e))} óra`);}
+function setRole(r){state.role=r; if(r==="user") state.adminTab="days"; state.openDate=null; render();}
+function requestAdmin(){const demo=state.mode!=="live";$("#passmsg").textContent=demo?"Demó jelszó: admin":"";
+  $("#passinput").value=""; $("#passbg").classList.remove("hidden"); setTimeout(()=>$("#passinput").focus(),60);}
+function bindMain(){
+  document.querySelectorAll(".demo-bar .toggle button[data-role]").forEach(b=>b.onclick=()=>{ b.dataset.role==="admin"?requestAdmin():setRole("user"); });
+  document.querySelectorAll(".adminnav button[data-tab]").forEach(b=>b.onclick=()=>{state.adminTab=b.dataset.tab;state.openDate=null;render();});
+  const ga=$("#goadmin"); if(ga) ga.onclick=requestAdmin;
+  const ea=$("#exitadmin"); if(ea) ea.onclick=()=>setRole("user");
+  const lo=$("#logout"); if(lo) lo.onclick=async()=>{await state.client.auth.signOut();state.email=null;setRole("user");};
+  document.querySelectorAll("[data-toggle]").forEach(btn=>btn.onclick=()=>{const dt=btn.dataset.toggle;state.openDate=state.openDate===dt?null:dt;render();});
+  document.querySelectorAll("input[data-field],textarea[data-field]").forEach(el=>el.addEventListener("input",()=>{
+    const {date,field}=el.dataset; (state.entries[date] ||= blank())[field]=el.value;
+    setStatus(date,"módosítva, mentésre vár",""); if(field!=="note") updateTotals(date);}));
+  document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>openConfirm(b.dataset.save));
+}
+function openConfirm(date){state.pending=date;
+  const d=new Date(date+"T00:00:00");
+  $("#m-text").innerHTML=`Biztosan menti a(z) <b>${huWeek(d)}, ${huFull(d)}</b> napot?`;
+  $("#modalbg").classList.remove("hidden");}
+
+/* statikus modal-gombok */
+$("#m-cancel").onclick=()=>{$("#modalbg").classList.add("hidden");state.pending=null;};
+$("#m-ok").onclick=()=>{const d=state.pending;$("#modalbg").classList.add("hidden");state.pending=null;if(d)save(d);};
+$("#pass-cancel").onclick=()=>{$("#passbg").classList.add("hidden");};
+$("#pass-ok").onclick=()=>{ if($("#passinput").value===EFF_PASS){$("#passbg").classList.add("hidden");setRole("admin");} else $("#passmsg").textContent="Hibás jelszó."; };
+$("#passinput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#pass-ok").click(); });
+
+/* ---------- indítás ---------- */
+(async function init(){
+  state.theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";
+  document.documentElement.setAttribute("data-theme",state.theme);
+  const live = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;
+  if(live){
+    await new Promise((res,rej)=>{const s=document.createElement("script");
+      s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    state.mode="live"; state.client=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+    const {data:{session}}=await state.client.auth.getSession();
+    if(session){ state.email=session.user.email; state.role="user"; await loadAll(); }
+    state.client.auth.onAuthStateChange(async(_e,sess)=>{ if(sess){state.email=sess.user.email; state.role="user"; await loadAll();} else state.email=null; render(); });
+  } else {
+    const set=(d,o)=>state.entries[d]={...blank(),...o};
+    set(`${Y}-${pad(M)}-03`,{r_locsolas:"2",r_takaritas:"1",r_kerteszeti:"1",r_admin:"1",head_a:"4",head_b:"8",head_c:"8"});
+    set(`${Y}-${pad(M)}-04`,{r_locsolas:"3",r_qta:"2",r_kerteszeti:"2",head_a:"8",head_b:"8",head_c:"8",head_d:"4"});
+  }
+  render();
+})();
+</script>
+</body>
+</html>
