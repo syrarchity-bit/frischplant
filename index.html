@@ -11,15 +11,18 @@
 <!-- ====================================================================
      KONFIGURÁCIÓ — élesítéshez töltsd ki. Üresen = DEMÓ (nem ment).
      ADMIN_PASS üresen hagyva a jelszó: "admin"
+     MEGRENDELO_PASS üresen hagyva a jelszó: "megrendelo"
      ==================================================================== -->
 <script>
 const CONFIG = {
   SUPABASE_URL:      "https://nofkgjddleywgmueeqem.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_Zr6GZMgISXNPeszyJZm2OQ_S6AmIaZM",
-  LOGIN_EMAIL:       "belepes@frischplant.online",   // a közös belépési fiók e-mailje (a jelszót a Supabase-ban állítod be)
+  LOGIN_EMAIL:       "belepes@frischplant.online",   // a közös belépési fiók e-mailje
   ADMIN_PASS:        "26HolaPinto++LF",   // az admin nézet jelszava (üres = "admin")
+  MEGRENDELO_PASS:   "Megrendelo2026",    // a megrendelői nézet jelszava (üres = "megrendelo") — átírható
+  RAIN_LAT: 47.53, RAIN_LON: 19.03,       // Budapest, II. kerület
   YEAR:  2026,
-  MONTH: 6                 // június
+  MONTH: 6                 // június (a munkatárs nézet az aktuális hónapot kezeli)
 };
 </script>
 
@@ -32,14 +35,14 @@ const CONFIG = {
   --bg:#f5f3ec; --surface:#ffffff; --ink:#1d2922; --muted:#6c766e;
   --accent:#2f7d4f; --accent-d:#256340; --accent-soft:#e7f0e9;
   --line:#e4e1d8; --line-2:#eeece4; --field:#fcfcfa;
-  --miss:#d24b4b; --miss-soft:#fbeceb;
+  --miss:#d24b4b; --miss-soft:#fbeceb; --rain:#2f6fbf; --rain-soft:rgba(47,111,191,.10);
   --r:16px; --sh:0 1px 2px rgba(29,41,34,.05), 0 8px 24px -16px rgba(29,41,34,.25);
 }
 [data-theme="dark"]{
   --bg:#12171a; --surface:#1b2226; --ink:#e9ede9; --muted:#98a39b;
   --accent:#4fa873; --accent-d:#73c293; --accent-soft:rgba(79,168,115,.16);
   --line:#2a3338; --line-2:#222a2e; --field:#161c1f;
-  --miss:#e16a6a; --miss-soft:rgba(225,106,106,.15);
+  --miss:#e16a6a; --miss-soft:rgba(225,106,106,.15); --rain:#7fb1f0; --rain-soft:rgba(127,177,240,.14);
   --sh:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
@@ -68,7 +71,7 @@ header{padding:24px 2px 12px;display:flex;align-items:flex-start;justify-content
 .hd-right{flex:none;display:flex;align-items:flex-start;gap:10px}
 .icon-btn{appearance:none;width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;transition:border-color .15s,transform .1s}
 .icon-btn:active{transform:scale(.94)}
-.who{text-align:right;font-size:12.5px;color:var(--muted);max-width:160px}
+.who{text-align:right;font-size:12.5px;color:var(--muted);max-width:170px}
 .badge{display:inline-block;margin-top:4px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-d);font-weight:600;font-size:11.5px}
 .linkbtn{appearance:none;border:0;background:none;color:var(--accent-d);font:inherit;font-size:12.5px;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
 
@@ -77,7 +80,14 @@ header{padding:24px 2px 12px;display:flex;align-items:flex-start;justify-content
 .toggle button{appearance:none;border:0;background:none;font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer;color:var(--muted)}
 .toggle button[aria-pressed="true"]{background:var(--accent);color:#fff}
 .demo-bar .toggle{margin-left:auto}
-.adminnav{display:flex;gap:8px;align-items:center;margin:2px 0 16px}
+.adminnav{display:flex;gap:8px;align-items:center;margin:2px 0 14px}
+
+.mnav{display:flex;align-items:center;gap:10px;margin:2px 0 14px}
+.mnav button{appearance:none;width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:grid;place-items:center;font-size:18px;line-height:1}
+.mnav button:disabled{opacity:.35;cursor:default}
+.mnav .lbl{font-weight:600;font-size:15px;min-width:150px;text-align:center;text-transform:capitalize}
+.exprow{display:flex;gap:9px;margin:0 0 14px;flex-wrap:wrap}
+.exprow .btn{padding:8px 14px;font-size:13px}
 
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:14px;overflow:hidden;transition:border-color .2s}
 .card.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--sh)}
@@ -107,6 +117,7 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .btn:hover{background:var(--accent-d)}.btn:active{transform:scale(.97)}
 .btn.save{margin-left:auto}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.ghost:hover{background:var(--field)}
 
 .section-lbl{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 2px 10px}
 .row{background:var(--surface);border:1px solid var(--line);border-radius:13px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 2px rgba(29,41,34,.04);transition:border-color .2s}
@@ -117,13 +128,18 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .rweek{font-weight:600;font-size:14px}.rdate{font-size:12px;color:var(--muted)}
 .todaypill{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-d);background:var(--accent-soft);border-radius:999px;padding:3px 7px;margin-left:8px}
 .misspill{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--miss);border-radius:999px;padding:3px 7px;margin-left:8px}
-.hrs{margin-left:auto;flex:none;font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}.hrs.on{color:var(--accent-d)}
+.rmeta{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none}
+.rmeta .rsub{display:flex;gap:5px;align-items:center}
+.hrs{font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}.hrs.on{color:var(--accent-d)}
+.pill-km{font-size:10.5px;font-weight:600;color:var(--muted);background:var(--field);border:1px solid var(--line-2);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.pill-rain{font-size:10.5px;font-weight:600;color:var(--rain);background:var(--rain-soft);border-radius:999px;padding:2px 7px;white-space:nowrap}
 .chev{flex:none;color:var(--muted);opacity:.6;transition:transform .2s;margin-left:8px}.row.open .chev{transform:rotate(180deg)}
 .row .edit-pad{border-top:1px solid var(--line-2);display:none}.row.open .edit-pad{display:block}
 
 .sum-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px 17px;margin-bottom:12px}
 .sum-card h4{margin:0 0 12px;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .big-num{font-family:"Fraunces",serif;font-weight:700;font-size:42px;line-height:1;color:var(--accent-d)}
+.big-num.rain{color:var(--rain)}
 .big-sub{font-size:13px;color:var(--muted);margin-top:5px}
 .quad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 @media(max-width:460px){.quad{grid-template-columns:repeat(2,1fr)}}
@@ -140,6 +156,11 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .tiles .t .l{font-size:11.5px;color:var(--muted);font-weight:600}
 .tiles .t .v{font-size:18px;font-weight:600;margin-top:3px;font-family:"Fraunces",serif}
 .sum-total{font-size:13px;color:var(--muted);margin-top:10px;text-align:right}
+.daylist{margin-top:6px}
+.daylist .dl{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--line-2);font-size:13px}
+.daylist .dl:last-child{border-bottom:0}
+.daylist .dl .dd{min-width:84px;color:var(--muted);font-variant-numeric:tabular-nums}
+.daylist .dl .dr{margin-left:auto;color:var(--rain);font-weight:600;font-variant-numeric:tabular-nums}
 
 .login{max-width:380px;margin:7vh auto 0;text-align:center}
 .login h1{font-family:"Fraunces",serif;font-weight:700;font-size:30px;margin:0 0 6px}
@@ -158,6 +179,16 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .modal input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .m-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
 .hidden{display:none!important}
+
+@media print{
+  body{background:#fff;padding:0;color:#000}
+  .forest,.hd-right,.mnav button,.exprow,.demo-bar,.adminnav,.icon-btn,.linkbtn,.chev{display:none!important}
+  .wrap{max-width:none}
+  header{padding:8px 0}
+  .mnav .lbl{min-width:0}
+  .sum-card,.card,.row{box-shadow:none;border-color:#bbb;break-inside:avoid}
+  .foot{display:none}
+}
 </style>
 </head>
 <body>
@@ -183,7 +214,7 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
   </div>
 </div>
 <div class="modal-bg hidden" id="passbg">
-  <div class="modal"><h3>Admin belépés</h3><p>Add meg az admin jelszót.</p>
+  <div class="modal"><h3 id="passtitle">Admin belépés</h3><p id="passsub">Add meg az admin jelszót.</p>
     <input id="passinput" type="password" autocomplete="off" placeholder="jelszó">
     <div class="note-sm" id="passmsg"></div>
     <div class="m-actions"><button class="btn ghost" id="pass-cancel">Mégse</button><button class="btn" id="pass-ok">Belépés</button></div>
@@ -200,23 +231,27 @@ const huWeek = d => new Intl.DateTimeFormat("hu-HU",{weekday:"long"}).format(d);
 const huFull = d => new Intl.DateTimeFormat("hu-HU",{year:"numeric",month:"long",day:"numeric"}).format(d);
 const huMonth= (y,m)=> new Intl.DateTimeFormat("hu-HU",{month:"long"}).format(new Date(y,m-1,1));
 
-/* két FÜGGETLEN rovat */
+/* két FÜGGETLEN rovat + km */
 const ACT = ["r_locsolas","r_tanyerozas","r_takaritas","r_karozas","r_felmeres","r_qta","r_kerteszeti"]; // tevékenységek
 const ADMINK = "r_admin";                                   // adminisztráció (csak admin)
-const HEADS = ["head_a","head_b","head_c","head_d"];        // négy önálló munkatárs, függetlenül kitölthető (A is)
+const HEADS = ["head_a","head_b","head_c","head_d"];        // négy munkatárs (C és D csak admin)
+const WHEADS = ["head_a","head_b"];                         // munkatárs csak A és B-t lát/visz fel
 const ALL = [...ACT,ADMINK,...HEADS];
 const LABEL = {r_locsolas:"locsolás",r_tanyerozas:"tányérozás",r_takaritas:"takarítás",r_karozas:"karózás",
   r_felmeres:"felmérés",r_qta:"QTA",r_kerteszeti:"kertészeti munka",r_admin:"adminisztráció",
-  head_a:"A",head_b:"B",head_c:"C",head_d:"D"};
-const EFF_PASS = CONFIG.ADMIN_PASS || "admin";
+  head_a:"A",head_b:"B",head_c:"C",head_d:"D",km:"km"};
+const EFF_ADMIN_PASS  = CONFIG.ADMIN_PASS || "admin";
+const EFF_CLIENT_PASS = CONFIG.MEGRENDELO_PASS || "megrendelo";
 
-const blank = () => { const o={note:""}; ALL.forEach(k=>o[k]=""); return o; };
+const blank = () => { const o={note:"",km:""}; ALL.forEach(k=>o[k]=""); return o; };
 const parseH = v => { if(!v) return 0; const n=parseFloat(v.toString().replace(",",".").trim()); return isNaN(n)?0:n; };
 const fmt = n => (Math.round(n*100)/100).toString().replace(".",",");
 const workSum = e => ACT.reduce((s,k)=>s+parseH(e[k]),0);   // tevékenységek összesen
 const headSum = e => HEADS.reduce((s,k)=>s+parseH(e[k]),0); // fejenkénti összesen (A+B+C+D)
 const adminH = e => parseH(e[ADMINK]);
-const hasHours = e => workSum(e)>0 || headSum(e)>0 || adminH(e)>0;
+const kmVal = e => parseH(e.km);
+const hasHours = e => workSum(e)>0 || headSum(e)>0 || adminH(e)>0 || kmVal(e)>0;
+function visibleHeadSum(e){ return state.role==="admin" ? headSum(e) : (parseH(e.head_a)+parseH(e.head_b)); }
 
 let bkSeq=0;
 function brekusz(viewBox,cls){ const id="bk"+(++bkSeq);
@@ -244,30 +279,56 @@ function brekusz(viewBox,cls){ const id="bk"+(++bkSeq);
     </g>
   </svg>`; }
 
-const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, openDate:null, theme:"light", pending:null };
+const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, openDate:null, theme:"light", pending:null, gateTarget:"admin", viewY:CONFIG.YEAR, viewM:CONFIG.MONTH };
 
 /* ---------- dátum ---------- */
-const Y=CONFIG.YEAR, M=CONFIG.MONTH;
-const monthStart=new Date(Y,M-1,1), daysInMonth=new Date(Y,M,0).getDate();
 const now=new Date();
 const todayD=new Date(now.getFullYear(),now.getMonth(),now.getDate());
 const yestD=new Date(todayD); yestD.setDate(todayD.getDate()-1);
 const TODAY=iso(todayD), YEST=iso(yestD);
-const yesterdayInMonth = yestD>=monthStart;
+const curY=todayD.getFullYear(), curM=todayD.getMonth()+1;
+const curMonthStart=new Date(curY,curM-1,1);
+const yesterdayInCurMonth = yestD>=curMonthStart;
+const daysIn=(y,m)=>new Date(y,m,0).getDate();
+const vDate=n=>`${state.viewY}-${pad(state.viewM)}-${pad(n)}`;
 const isMissed = date => { const d=new Date(date+"T00:00:00"); return d<todayD && !hasHours(state.entries[date]||blank()); };
+const isCurMonth = ()=> state.viewY>curY || (state.viewY===curY && state.viewM>=curM);
 
 /* ---------- store ---------- */
-async function loadAll(){
+async function loadMonth(y,m){
   if(state.mode!=="live") return;
-  const first=`${Y}-${pad(M)}-01`, last=`${Y}-${pad(M)}-${pad(daysInMonth)}`;
+  const dim=daysIn(y,m), first=`${y}-${pad(m)}-01`, last=`${y}-${pad(m)}-${pad(dim)}`;
   const {data,error}=await state.client.from("entries").select("*").gte("entry_date",first).lte("entry_date",last);
   state.entries={};
-  if(!error && data) data.forEach(r=>{ const e=blank(); ALL.forEach(k=>e[k]=r[k]||""); e.note=r.note||""; state.entries[r.entry_date]=e; });
+  if(!error && data) data.forEach(r=>{ const e=blank(); ALL.forEach(k=>e[k]=r[k]||""); e.km=r.km||""; e.note=r.note||""; state.entries[r.entry_date]=e; });
 }
+async function loadRain(y,m){
+  const key=`${y}-${pad(m)}`;
+  if(state.rain[key]) return;
+  const monthEnd=new Date(y,m,0);
+  const end = (monthEnd>todayD?todayD:monthEnd);
+  if(end < new Date(y,m-1,1)){ state.rain[key]={byDay:{},total:0,rainy:0,ok:true}; return; }
+  const start=`${y}-${pad(m)}-01`, endStr=iso(end);
+  const lat=CONFIG.RAIN_LAT, lon=CONFIG.RAIN_LON, tz="Europe%2FBudapest";
+  const useArchive = monthEnd < new Date(todayD.getTime()-6*86400000);
+  const base = useArchive ? "https://archive-api.open-meteo.com/v1/archive" : "https://api.open-meteo.com/v1/forecast";
+  const url=`${base}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${endStr}&daily=precipitation_sum&timezone=${tz}`;
+  try{
+    const res=await fetch(url); const j=await res.json();
+    const days=(j.daily&&j.daily.time)||[], vals=(j.daily&&j.daily.precipitation_sum)||[];
+    const byDay={}; let total=0,rainy=0;
+    days.forEach((dt,i)=>{ const v=vals[i]; if(v!=null){ byDay[dt]=v; total+=v; if(v>=1) rainy++; } });
+    state.rain[key]={byDay,total:Math.round(total*10)/10,rainy,ok:true};
+  }catch(err){ state.rain[key]={byDay:{},total:0,rainy:0,ok:false}; }
+}
+function rainKey(){return `${state.viewY}-${pad(state.viewM)}`;}
+function rainFor(date){ const r=state.rain[rainKey()]; return (r&&r.ok&&(date in r.byDay))?r.byDay[date]:null; }
+function rainAgg(){ const r=state.rain[rainKey()]; return r?r:{ok:false,byDay:{},total:0,rainy:0}; }
+
 async function save(date){
   const e = state.entries[date] || (state.entries[date]=blank());
   if(state.mode==="live"){
-    const row={entry_date:date,note:e.note,updated_by:state.email,updated_at:new Date().toISOString()};
+    const row={entry_date:date,note:e.note,km:e.km,updated_by:state.email,updated_at:new Date().toISOString()};
     ALL.forEach(k=>row[k]=e[k]);
     const {error}=await state.client.from("entries").upsert(row,{onConflict:"entry_date"});
     setStatus(date, error?"nem mentődött":"mentve ✓", error?"err":"ok");
@@ -276,12 +337,20 @@ async function save(date){
 }
 function setStatus(date,txt,cls){document.querySelectorAll(`[data-status="${date}"]`).forEach(el=>{el.textContent=txt;el.className="status "+(cls||"");});}
 
+async function refresh(){
+  await loadMonth(state.viewY,state.viewM);
+  await loadRain(state.viewY,state.viewM);
+  render();
+}
+
 /* ---------- mezők ---------- */
 function hf(date,k,dis){const e=state.entries[date]||blank();
   return `<div class="hf"><label>${LABEL[k]}</label><input type="text" inputmode="decimal" autocomplete="off" data-date="${date}" data-field="${k}" value="${esc(e[k])}" placeholder="0"${dis||""}></div>`;}
 function editorHTML(date,locked){
   const e=state.entries[date]||blank(); const dis = locked?" disabled":"";
-  const adminBlock = (!locked && state.role==="admin")
+  const isAdmin = state.role==="admin";
+  const heads = isAdmin ? HEADS : WHEADS;
+  const adminBlock = (!locked && isAdmin)
     ? `<div class="grp"><div class="grp-lbl">Adminisztráció (csak admin)</div><div class="hgrid">${hf(date,ADMINK,dis)}</div></div>` : "";
   const tail = locked
     ? `<div class="locknote">🔒 Előbb töltsd ki és mentsd a tegnapi napot.</div>`
@@ -289,35 +358,85 @@ function editorHTML(date,locked){
   return `
     <div class="grp"><div class="grp-lbl">Óraszám tevékenységenként</div><div class="hgrid">${ACT.map(k=>hf(date,k,dis)).join("")}</div>
       <div class="subtotal" data-acttotal="${date}">Tevékenységek összesen: ${fmt(workSum(e))} óra</div></div>
-    <div class="grp"><div class="grp-lbl">Fejenkénti munkaóra</div><div class="hgrid">${HEADS.map(k=>hf(date,k,dis)).join("")}</div>
-      <div class="subtotal" data-headtotal="${date}">Fejenkénti összesen: ${fmt(headSum(e))} óra</div></div>
+    <div class="grp"><div class="grp-lbl">Fejenkénti munkaóra</div><div class="hgrid">${heads.map(k=>hf(date,k,dis)).join("")}</div>
+      <div class="subtotal" data-headtotal="${date}">Fejenkénti összesen: ${fmt(visibleHeadSum(e))} óra</div></div>
     ${adminBlock}
+    <div class="grp"><div class="grp-lbl">Autózott kilométer (aznap)</div><div class="hgrid">${hf(date,"km",dis)}</div></div>
     <div class="grp"><div class="grp-lbl">Megjegyzés</div><textarea class="note" data-date="${date}" data-field="note" rows="2"${dis}>${esc(e.note)}</textarea></div>
     ${tail}`;
 }
 
 /* ---------- fejléc + sávok ---------- */
+const ICON_MOON=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>`;
+const ICON_SUN=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg>`;
+
 function headerHTML(){
   const themeBtn=`<button class="icon-btn" id="theme" title="téma">${state.theme==="dark"?ICON_SUN:ICON_MOON}</button>`;
   let info;
   if(state.mode==="live"){
-    info = state.role==="admin"
-      ? `<div class="who">${esc(state.email||"")}<br><span class="badge">adminisztrátor</span><br><button class="linkbtn" id="exitadmin">vissza munkatárs nézethez</button><br><button class="linkbtn" id="logout">kijelentkezés</button></div>`
-      : `<div class="who">${esc(state.email||"")}<br><span class="badge">munkatárs</span><br><button class="linkbtn" id="goadmin">admin belépés →</button><br><button class="linkbtn" id="logout">kijelentkezés</button></div>`;
+    if(state.role==="admin"){
+      info=`<div class="who">${esc(state.email||"")}<br><span class="badge">adminisztrátor</span><br><button class="linkbtn" id="goclient">megrendelői nézet →</button><br><button class="linkbtn" id="exitadmin">vissza munkatárs nézethez</button><br><button class="linkbtn" id="logout">kijelentkezés</button></div>`;
+    } else if(state.role==="client"){
+      info=`<div class="who">${esc(state.email||"")}<br><span class="badge">megrendelő · csak olvasás</span><br><button class="linkbtn" id="clientexit">kilépés a nézetből</button><br><button class="linkbtn" id="logout">kijelentkezés</button></div>`;
+    } else {
+      info=`<div class="who">${esc(state.email||"")}<br><span class="badge">munkatárs</span><br><button class="linkbtn" id="goadmin">admin belépés →</button><br><button class="linkbtn" id="goclient">megrendelői nézet →</button><br><button class="linkbtn" id="logout">kijelentkezés</button></div>`;
+    }
   } else info = `<div class="who"><span class="badge">demó mód</span></div>`;
-  return `<header><div class="brand"><div class="wm"><div class="title-h">FRISCHPLANT</div><div class="sub">${Y} · ${huMonth(Y,M)}</div></div>${brekusz("0 0 100 71","bk-mark")}</div>
+  return `<header><div class="brand"><div class="wm"><div class="title-h">FRISCHPLANT</div><div class="sub">${state.viewY} · ${huMonth(state.viewY,state.viewM)}</div></div>${brekusz("0 0 100 71","bk-mark")}</div>
     <div class="hd-right">${themeBtn}${info}</div></header>`;
 }
 function demoBar(){ if(state.mode==="live") return "";
   return `<div class="demo-bar">Kipróbálási mód, az adat nem mentődik.
-    <span class="toggle"><button data-role="user" aria-pressed="${state.role==='user'}">munkatárs</button><button data-role="admin" aria-pressed="${state.role==='admin'}">admin 🔒</button></span></div>`;}
+    <span class="toggle"><button data-role="user" aria-pressed="${state.role==='user'}">munkatárs</button><button data-role="admin" aria-pressed="${state.role==='admin'}">admin 🔒</button><button data-role="client" aria-pressed="${state.role==='client'}">megrendelő 🔒</button></span></div>`;}
 function adminNav(active){
   return `<div class="adminnav"><span class="toggle">
     <button data-tab="days" aria-pressed="${active==='days'}">Napok</button>
     <button data-tab="summary" aria-pressed="${active==='summary'}">Összesítés</button></span></div>`;}
+function monthNav(){
+  return `<div class="mnav"><button data-mnav="-1" title="előző hónap">‹</button>
+    <span class="lbl">${state.viewY}. ${huMonth(state.viewY,state.viewM)}</span>
+    <button data-mnav="1" title="következő hónap"${isCurMonth()?" disabled":""}>›</button></div>`;}
+function exportRow(){
+  return `<div class="exprow"><button class="btn ghost" data-export="csv">CSV letöltése</button><button class="btn ghost" data-export="pdf">PDF / nyomtatás</button></div>`;}
 
-const ICON_MOON=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>`;
-const ICON_SUN=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg>`;
+/* ---------- összesítő-építők ---------- */
+function monthAgg(){
+  const y=state.viewY,m=state.viewM,dim=daysIn(y,m);
+  const actBy={}; ACT.concat(ADMINK).forEach(k=>actBy[k]=0);
+  let workTotal=0,adminTotal=0,hA=0,hB=0,hC=0,hD=0,kmTotal=0,filledDays=0,missedDays=0;
+  for(let n=1;n<=dim;n++){
+    const date=`${y}-${pad(m)}-${pad(n)}`, e=state.entries[date]||blank();
+    workTotal+=workSum(e);
+    ACT.forEach(k=>actBy[k]+=parseH(e[k]));
+    actBy[ADMINK]+=adminH(e); adminTotal+=adminH(e);
+    hA+=parseH(e.head_a);hB+=parseH(e.head_b);hC+=parseH(e.head_c);hD+=parseH(e.head_d);
+    kmTotal+=kmVal(e);
+    const dD=new Date(date+"T00:00:00");
+    if(hasHours(e)) filledDays++; else if(dD<todayD) missedDays++;
+  }
+  return {y,m,dim,actBy,workTotal,adminTotal,hA,hB,hC,hD,crew:hA+hB+hC+hD,kmTotal,filledDays,missedDays};
+}
+function headQuad(a){ return [["A",a.hA],["B",a.hB],["C",a.hC],["D",a.hD]].map(([l,v])=>`<div class="q"><div class="l">${l}</div><div class="v">${fmt(v)}</div></div>`).join(""); }
+function worktypeBars(a){
+  const acts=ACT.map(k=>({label:LABEL[k],h:a.actBy[k]}));
+  const denom=a.workTotal, maxAct=Math.max(0,...acts.map(x=>x.h));
+  return acts.map(x=>{const w=maxAct>0?Math.round(x.h/maxAct*100):0;const p=denom>0?Math.round(x.h/denom*100):0;
+    return `<div class="kv"><span class="name">${x.label}</span><span class="bar"><i style="width:${w}%"></i></span><span class="val">${fmt(x.h)} ó · ${p}%</span></div>`;}).join("");
+}
+function kmCard(a){ const avg=a.filledDays?a.kmTotal/a.filledDays:0;
+  return `<div class="sum-card"><h4>Autózott kilométer</h4><div class="big-num">${fmt(a.kmTotal)} km</div><div class="big-sub">napi átlag ${fmt(avg)} km · ${a.filledDays} munkanap</div></div>`; }
+function rainCard(a){
+  const r=rainAgg();
+  if(!r.ok) return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4><div class="big-sub">A csapadékadat jelenleg nem elérhető.</div></div>`;
+  const y=state.viewY,m=state.viewM,dim=daysIn(y,m); let list="";
+  for(let n=1;n<=dim;n++){ const date=`${y}-${pad(m)}-${pad(n)}`, v=r.byDay[date];
+    if(v!=null && v>0){ const d=new Date(date+"T00:00:00"); list+=`<div class="dl"><span class="dd">${pad(n)}. ${huWeek(d).slice(0,3)}</span><span class="dr">${fmt(v)} mm</span></div>`; } }
+  const listHTML = list?`<div class="daylist">${list}</div>`:`<div class="big-sub">Nem volt mérhető csapadék ebben az időszakban.</div>`;
+  return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4>
+    <div class="big-num rain">${fmt(r.total)} mm</div><div class="big-sub">${r.rainy} esős nap (≥ 1 mm) a hónapban</div>
+    ${listHTML}
+    <div class="sum-total">Locsolás összesen ${fmt(a.actBy.r_locsolas)} ó — a csapadékos napokon jellemzően kevesebb az öntözés.</div></div>`;
+}
 
 /* ---------- nézetek ---------- */
 function dayCard(date,kind,locked){
@@ -329,65 +448,71 @@ function dayCard(date,kind,locked){
 }
 function userView(){
   let h=headerHTML()+demoBar();
-  const yMissing = yesterdayInMonth && !hasHours(state.entries[YEST]||blank());
+  const yMissing = yesterdayInCurMonth && !hasHours(state.entries[YEST]||blank());
   if(yMissing){ h+=dayCard(YEST,"prev",false); h+=dayCard(TODAY,"now",true); }
   else h+=dayCard(TODAY,"now",false);
-  h+=`<div class="foot">FRISCHPLANT · ${huMonth(Y,M)} próbahónap</div>`;
+  h+=`<div class="foot">FRISCHPLANT · ${huMonth(curY,curM)} · munkatárs nézet</div>`;
   return h;
 }
 function adminRow(n){
-  const date=`${Y}-${pad(M)}-${pad(n)}`, d=new Date(date+"T00:00:00");
+  const date=vDate(n), d=new Date(date+"T00:00:00");
   const e=state.entries[date]||blank(), tot=(headSum(e)>0?headSum(e):workSum(e)), open=state.openDate===date;
+  const km=kmVal(e), rain=rainFor(date);
   const today=date===TODAY, missed=isMissed(date);
   const pill = today?'<span class="todaypill">ma</span>':(missed?'<span class="misspill">elmaradt</span>':'');
+  const kmTxt = km>0?`<span class="pill-km">${fmt(km)} km</span>`:'';
+  const rainTxt = (rain!=null && rain>0)?`<span class="pill-rain">☔ ${fmt(rain)} mm</span>`:'';
+  const sub = (kmTxt||rainTxt)?`<span class="rsub">${kmTxt}${rainTxt}</span>`:'';
   return `<div class="row ${open?'open':''} ${today?'today':''} ${missed?'missed':''}" data-row="${date}">
     <button class="rowbtn" data-toggle="${date}"><span class="rdn">${n}</span>
       <span class="dmeta"><span class="rweek">${huWeek(d)}</span>${pill}<br><span class="rdate">${huFull(d)}</span></span>
-      <span class="hrs ${tot>0?'on':''}">${tot>0?fmt(tot)+' ó':'—'}</span>
+      <span class="rmeta"><span class="hrs ${tot>0?'on':''}">${tot>0?fmt(tot)+' ó':'—'}</span>${sub}</span>
       <svg class="chev" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button><div class="edit-pad">${open?editorHTML(date,false):""}</div></div>`;
 }
 function adminView(){
-  let rows=""; for(let n=1;n<=daysInMonth;n++) rows+=adminRow(n);
-  return headerHTML()+demoBar()+adminNav('days')+`<div class="section-lbl">teljes hónap · ${daysInMonth} nap</div>`+rows+`<div class="foot">FRISCHPLANT · adminisztrátori nézet</div>`;
-}
-function monthAgg(){
-  const actBy={}; ACT.concat(ADMINK).forEach(k=>actBy[k]=0);
-  let workTotal=0, adminTotal=0, hA=0,hB=0,hC=0,hD=0, filledDays=0, missedDays=0;
-  for(let n=1;n<=daysInMonth;n++){
-    const date=`${Y}-${pad(M)}-${pad(n)}`, e=state.entries[date]||blank();
-    workTotal+=workSum(e);
-    ACT.forEach(k=>actBy[k]+=parseH(e[k]));
-    actBy[ADMINK]+=adminH(e); adminTotal+=adminH(e);
-    hA+=parseH(e.head_a); hB+=parseH(e.head_b); hC+=parseH(e.head_c); hD+=parseH(e.head_d);
-    const dD=new Date(date+"T00:00:00");
-    if(hasHours(e)) filledDays++; else if(dD<todayD) missedDays++;
-  }
-  const crew=hA+hB+hC+hD;
-  return {actBy,workTotal,adminTotal,hA,hB,hC,hD,crew,filledDays,missedDays};
+  let rows=""; const dim=daysIn(state.viewY,state.viewM);
+  for(let n=1;n<=dim;n++) rows+=adminRow(n);
+  return headerHTML()+demoBar()+adminNav('days')+monthNav()+exportRow()+
+    `<div class="section-lbl">teljes hónap · ${dim} nap</div>`+rows+`<div class="foot">FRISCHPLANT · adminisztrátori nézet</div>`;
 }
 function summaryView(){
   const a=monthAgg();
-  const acts=ACT.concat(ADMINK).map(k=>({label:LABEL[k],h:a.actBy[k]}));
-  const denom=a.workTotal+a.adminTotal, maxAct=Math.max(0,...acts.map(x=>x.h));
   const topAct=ACT.map(k=>({label:LABEL[k],h:a.actBy[k]})).reduce((p,c)=>c.h>p.h?c:p,{h:0,label:'—'});
   const avg=a.filledDays?a.crew/a.filledDays:0;
-  const heads=[["A",a.hA],["B",a.hB],["C",a.hC],["D",a.hD]].map(([l,v])=>`<div class="q"><div class="l">${l}</div><div class="v">${fmt(v)}</div></div>`).join("");
-  const bars=acts.map(x=>{const w=maxAct>0?Math.round(x.h/maxAct*100):0;const p=denom>0?Math.round(x.h/denom*100):0;
-    return `<div class="kv"><span class="name">${x.label}</span><span class="bar"><i style="width:${w}%"></i></span><span class="val">${fmt(x.h)} ó · ${p}%</span></div>`;}).join("");
-  return headerHTML()+demoBar()+adminNav('summary')+
-    `<div class="sum-card"><h4>Fejenkénti munkaóra (havi) — A–D</h4><div class="quad">${heads}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>
-     <div class="sum-card"><h4>Tevékenység szerinti összóraszám</h4>${bars}<div class="sum-total">összesen ${fmt(denom)} óra</div></div>
+  return headerHTML()+demoBar()+adminNav('summary')+monthNav()+exportRow()+
+    `<div class="sum-card"><h4>Fejenkénti munkaóra (havi) — A–D</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>
+     <div class="sum-card"><h4>Tevékenység szerinti összóraszám (A–D)</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>
+     ${kmCard(a)}
+     ${rainCard(a)}
      <div class="sum-card"><h4>Statisztika</h4><div class="tiles">
-       <div class="t"><div class="l">Kitöltött napok</div><div class="v">${a.filledDays} / ${daysInMonth}</div></div>
+       <div class="t"><div class="l">Kitöltött napok</div><div class="v">${a.filledDays} / ${a.dim}</div></div>
        <div class="t"><div class="l">Elmaradt napok</div><div class="v">${a.missedDays}</div></div>
        <div class="t"><div class="l">Fejenkénti összes (A–D)</div><div class="v">${fmt(a.crew)} ó</div></div>
        <div class="t"><div class="l">Tevékenységek összesen</div><div class="v">${fmt(a.workTotal)} ó</div></div>
        <div class="t"><div class="l">Átlag fejenkénti / nap</div><div class="v">${fmt(avg)} ó</div></div>
        <div class="t"><div class="l">Legtöbb idő (tev.)</div><div class="v" style="font-size:15px">${topAct.h>0?topAct.label:'—'}</div></div>
        <div class="t"><div class="l">Adminisztráció</div><div class="v">${fmt(a.adminTotal)} ó</div></div>
+       <div class="t"><div class="l">Autózott km</div><div class="v">${fmt(a.kmTotal)} km</div></div>
      </div></div>
      <div class="foot">FRISCHPLANT · havi összesítő, csak admin</div>`;
+}
+function clientView(){
+  const a=monthAgg();
+  const avgKm=a.filledDays?a.kmTotal/a.filledDays:0;
+  return headerHTML()+demoBar()+monthNav()+exportRow()+
+    `<div class="sum-card"><h4>Összes ledolgozott óra</h4><div class="big-num">${fmt(a.workTotal)} ó</div><div class="big-sub">${a.filledDays} munkanap ebben a hónapban</div></div>
+     <div class="sum-card"><h4>Fejenkénti munkaóra — A–D</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>
+     <div class="sum-card"><h4>Munkatípus-megoszlás</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>
+     ${kmCard(a)}
+     ${rainCard(a)}
+     <div class="sum-card"><h4>Statisztika</h4><div class="tiles">
+       <div class="t"><div class="l">Munkanapok</div><div class="v">${a.filledDays}</div></div>
+       <div class="t"><div class="l">Átlag óra / nap</div><div class="v">${fmt(a.filledDays?a.crew/a.filledDays:0)} ó</div></div>
+       <div class="t"><div class="l">Autózott km</div><div class="v">${fmt(a.kmTotal)} km</div></div>
+       <div class="t"><div class="l">Napi átlag km</div><div class="v">${fmt(avgKm)} km</div></div>
+     </div></div>
+     <div class="foot">FRISCHPLANT · megrendelői áttekintő</div>`;
 }
 function loginView(){
   return headerHTML()+`<div class="login">${brekusz("0 0 100 80","bk-hero")}<h1>FRISCHPLANT</h1>
@@ -397,11 +522,30 @@ function loginView(){
     <div class="note-sm" id="loginmsg"></div></div>`;
 }
 
+/* ---------- export ---------- */
+function exportCSV(){
+  const a=monthAgg(), y=state.viewY,m=state.viewM,dim=a.dim;
+  const head=["Dátum","A","B","C","D","Fejenkénti összes","locsolás","tányérozás","takarítás","karózás","felmérés","QTA","kertészeti","adminisztráció","Autózott km","Csapadék mm","Megjegyzés"];
+  const lines=[head.join(";")];
+  for(let n=1;n<=dim;n++){ const date=`${y}-${pad(m)}-${pad(n)}`, e=state.entries[date]||blank(), rain=rainFor(date);
+    const row=[date,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),
+      e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):""),(e.note||"").replace(/[;\n\r]/g," ")];
+    lines.push(row.join(";")); }
+  const r=rainAgg();
+  lines.push(["ÖSSZESEN","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(r.ok?fmt(r.total):""),""].join(";"));
+  const csv="\uFEFF"+lines.join("\r\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob), link=document.createElement("a");
+  link.href=url; link.download=`frischplant-${y}-${pad(m)}.csv`; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+}
+
 /* ---------- render + események ---------- */
 function render(){
   const app=$("#app");
   if(state.mode==="live" && !state.email){ app.innerHTML=loginView(); bindTop(); bindLogin(); return; }
-  app.innerHTML = state.role==="admin" ? (state.adminTab==="summary"?summaryView():adminView()) : userView();
+  if(state.role==="admin") app.innerHTML = state.adminTab==="summary"?summaryView():adminView();
+  else if(state.role==="client") app.innerHTML = clientView();
+  else app.innerHTML = userView();
   bindTop(); bindMain();
 }
 function bindTop(){const t=$("#theme"); if(t) t.onclick=()=>{state.theme=state.theme==="dark"?"light":"dark";
@@ -414,20 +558,27 @@ function bindLogin(){const go=async()=>{const pw=$("#pw").value;
   $("#signin").onclick=go; $("#pw").addEventListener("keydown",e=>{if(e.key==="Enter") go();});}
 function updateTotals(date){const e=state.entries[date]||blank();
   document.querySelectorAll(`[data-acttotal="${date}"]`).forEach(el=>el.textContent=`Tevékenységek összesen: ${fmt(workSum(e))} óra`);
-  document.querySelectorAll(`[data-headtotal="${date}"]`).forEach(el=>el.textContent=`Fejenkénti összesen: ${fmt(headSum(e))} óra`);}
-function setRole(r){state.role=r; if(r==="user") state.adminTab="days"; state.openDate=null; render();}
-function requestAdmin(){const demo=state.mode!=="live";$("#passmsg").textContent=demo?"Demó jelszó: admin":"";
+  document.querySelectorAll(`[data-headtotal="${date}"]`).forEach(el=>el.textContent=`Fejenkénti összesen: ${fmt(visibleHeadSum(e))} óra`);}
+function setRole(r){ state.role=r; if(r!=="admin") state.adminTab="days"; state.openDate=null; state.viewY=curY; state.viewM=curM; refresh(); }
+function requestGate(target){ state.gateTarget=target; const demo=state.mode!=="live";
+  $("#passtitle").textContent = target==="admin"?"Admin belépés":"Megrendelői nézet";
+  $("#passsub").textContent = target==="admin"?"Add meg az admin jelszót.":"Add meg a megrendelői jelszót.";
+  $("#passmsg").textContent = demo?(target==="admin"?"Demó jelszó: admin":"Demó jelszó: megrendelo"):"";
   $("#passinput").value=""; $("#passbg").classList.remove("hidden"); setTimeout(()=>$("#passinput").focus(),60);}
 function bindMain(){
-  document.querySelectorAll(".demo-bar .toggle button[data-role]").forEach(b=>b.onclick=()=>{ b.dataset.role==="admin"?requestAdmin():setRole("user"); });
+  document.querySelectorAll(".demo-bar .toggle button[data-role]").forEach(b=>b.onclick=()=>{ const r=b.dataset.role; (r==="admin"||r==="client")?requestGate(r):setRole("user"); });
   document.querySelectorAll(".adminnav button[data-tab]").forEach(b=>b.onclick=()=>{state.adminTab=b.dataset.tab;state.openDate=null;render();});
-  const ga=$("#goadmin"); if(ga) ga.onclick=requestAdmin;
+  document.querySelectorAll("[data-mnav]").forEach(b=>b.onclick=()=>{ let m=state.viewM+parseInt(b.dataset.mnav,10),y=state.viewY; if(m<1){m=12;y--;} if(m>12){m=1;y++;} if(y>curY||(y===curY&&m>curM)) return; state.viewY=y;state.viewM=m;state.openDate=null;refresh(); });
+  document.querySelectorAll("[data-export]").forEach(b=>b.onclick=()=>{ b.dataset.export==="csv"?exportCSV():window.print(); });
+  const ga=$("#goadmin"); if(ga) ga.onclick=()=>requestGate("admin");
+  const gc=$("#goclient"); if(gc) gc.onclick=()=>requestGate("client");
   const ea=$("#exitadmin"); if(ea) ea.onclick=()=>setRole("user");
+  const ce=$("#clientexit"); if(ce) ce.onclick=()=>setRole("user");
   const lo=$("#logout"); if(lo) lo.onclick=async()=>{await state.client.auth.signOut();state.email=null;setRole("user");};
   document.querySelectorAll("[data-toggle]").forEach(btn=>btn.onclick=()=>{const dt=btn.dataset.toggle;state.openDate=state.openDate===dt?null:dt;render();});
   document.querySelectorAll("input[data-field],textarea[data-field]").forEach(el=>el.addEventListener("input",()=>{
     const {date,field}=el.dataset; (state.entries[date] ||= blank())[field]=el.value;
-    setStatus(date,"módosítva, mentésre vár",""); if(field!=="note") updateTotals(date);}));
+    setStatus(date,"módosítva, mentésre vár",""); if(field!=="note"&&field!=="km") updateTotals(date);}));
   document.querySelectorAll("[data-save]").forEach(b=>b.onclick=()=>openConfirm(b.dataset.save));
 }
 function openConfirm(date){state.pending=date;
@@ -439,27 +590,29 @@ function openConfirm(date){state.pending=date;
 $("#m-cancel").onclick=()=>{$("#modalbg").classList.add("hidden");state.pending=null;};
 $("#m-ok").onclick=()=>{const d=state.pending;$("#modalbg").classList.add("hidden");state.pending=null;if(d)save(d);};
 $("#pass-cancel").onclick=()=>{$("#passbg").classList.add("hidden");};
-$("#pass-ok").onclick=()=>{ if($("#passinput").value===EFF_PASS){$("#passbg").classList.add("hidden");setRole("admin");} else $("#passmsg").textContent="Hibás jelszó."; };
+$("#pass-ok").onclick=()=>{ const t=state.gateTarget||"admin"; const ok = t==="admin"?($("#passinput").value===EFF_ADMIN_PASS):($("#passinput").value===EFF_CLIENT_PASS);
+  if(ok){$("#passbg").classList.add("hidden");setRole(t);} else $("#passmsg").textContent="Hibás jelszó."; };
 $("#passinput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#pass-ok").click(); });
 
 /* ---------- indítás ---------- */
 (async function init(){
   state.theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";
   document.documentElement.setAttribute("data-theme",state.theme);
+  state.viewY=curY; state.viewM=curM;
   const live = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;
   if(live){
     await new Promise((res,rej)=>{const s=document.createElement("script");
       s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
     state.mode="live"; state.client=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+    state.client.auth.onAuthStateChange(async(_e,sess)=>{ if(sess){ state.email=sess.user.email; if(state.role!=="admin"&&state.role!=="client") state.role="user"; await refresh(); } else { state.email=null; render(); } });
     const {data:{session}}=await state.client.auth.getSession();
-    if(session){ state.email=session.user.email; state.role="user"; await loadAll(); }
-    state.client.auth.onAuthStateChange(async(_e,sess)=>{ if(sess){state.email=sess.user.email; state.role="user"; await loadAll();} else state.email=null; render(); });
+    if(session){ state.email=session.user.email; state.role="user"; await refresh(); } else render();
   } else {
     const set=(d,o)=>state.entries[d]={...blank(),...o};
-    set(`${Y}-${pad(M)}-03`,{r_locsolas:"2",r_takaritas:"1",r_kerteszeti:"1",r_admin:"1",head_a:"4",head_b:"8",head_c:"8"});
-    set(`${Y}-${pad(M)}-04`,{r_locsolas:"3",r_qta:"2",r_kerteszeti:"2",head_a:"8",head_b:"8",head_c:"8",head_d:"4"});
+    set(`${curY}-${pad(curM)}-03`,{r_locsolas:"6",r_takaritas:"1,5",r_karozas:"0,5",head_a:"8",head_b:"8",km:"42"});
+    set(`${curY}-${pad(curM)}-04`,{r_locsolas:"5",r_qta:"2",head_a:"8",head_b:"8",km:"55"});
+    await refresh();
   }
-  render();
 })();
 </script>
 </body>
