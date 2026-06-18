@@ -355,6 +355,30 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
   50% { opacity: 1; }
 }
 @media(max-width:430px){.bk-scene{width:88px}}
+
+/* ---- Frissítés-jelző (gólya) ---- */
+.bk-update{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(150%);
+  display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;box-shadow:var(--sh);padding:9px 13px 9px 9px;z-index:45;cursor:pointer;
+  max-width:calc(100% - 32px);opacity:0}
+.bk-update.show{animation:storkWalkIn 1.15s cubic-bezier(.2,.85,.3,1) forwards}
+@keyframes storkWalkIn{
+  0%{opacity:0;transform:translateX(-185%) translateY(0)}
+  60%{opacity:1}
+  100%{opacity:1;transform:translateX(-50%) translateY(0)}
+}
+.bk-update .stork{width:48px;height:48px;flex:none}
+.bk-update .stork svg{width:100%;height:100%;display:block;overflow:visible}
+.bk-update .u-txt{font-size:13px;line-height:1.25}
+.bk-update .u-txt b{display:block;font-size:13.5px;color:var(--ink)}
+.bk-update .u-txt span{color:var(--muted);font-size:11.5px}
+.bk-update .u-go{margin-left:4px;flex:none;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 13px;font:inherit;font-weight:600;font-size:13px;cursor:pointer}
+.bk-update .u-go:hover{background:var(--accent-d)}
+.stork-leg{transform-box:fill-box;transform-origin:top center}
+.bk-update.show .stork-leg-l{animation:storkStepL .42s ease-in-out 5}
+.bk-update.show .stork-leg-r{animation:storkStepR .42s ease-in-out 5}
+@keyframes storkStepL{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(11deg)}}
+@keyframes storkStepR{0%,100%{transform:rotate(11deg)}50%{transform:rotate(-9deg)}}
 </style>
 </head>
 <body>
@@ -371,6 +395,21 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
  </g>
 </svg>
 </div>
+
+<div class="bk-update" id="bkUpdate" role="button" tabindex="0" aria-label="Frissítés elérhető"><div class="stork" aria-hidden="true"><svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <g class="stork-leg stork-leg-l"><line x1="28" y1="43" x2="24" y2="60" stroke="#e8902f" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g class="stork-leg stork-leg-r"><line x1="34" y1="43" x2="38" y2="60" stroke="#e8902f" stroke-width="2.2" stroke-linecap="round"/></g>
+  <path d="M16 37 L7 33 L16 41 Z" fill="#e9edf1"/>
+  <ellipse cx="31" cy="38" rx="15" ry="10" fill="#fdfdfb"/>
+  <path d="M21 33 Q33 29 45 36 Q34 43 23 40 Z" fill="#e9edf1"/>
+  <path d="M40 34 Q47 30 46 20 Q46 14 41 13" fill="none" stroke="#fdfdfb" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="42" cy="13" r="5.2" fill="#fdfdfb"/>
+  <path d="M46 11.5 L61 9 L46 16 Z" fill="#e8902f"/>
+  <circle cx="43.6" cy="11.6" r="1.1" fill="#1a1816"/>
+  <line x1="55" y1="11" x2="55" y2="20" stroke="#b9842f" stroke-width="0.9"/>
+  <rect x="50" y="20" width="10" height="9" rx="2" fill="#cde3f4" stroke="#7fb1e0" stroke-width="0.8"/>
+  <path d="M50 24.5 h10 M55 20 v9" stroke="#7fb1e0" stroke-width="0.7"/>
+</svg></div><div class="u-txt"><b>Frissítés elérhető</b><span>koppints az újratöltéshez</span></div><button class="u-go" type="button">Frissítés</button></div>
 
 <template id="bkSceneTpl"><div class="bk-scene" aria-hidden="true"><svg viewBox="-62 -82 264 176" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -649,6 +688,18 @@ function brekusz(viewBox,cls){ const id="bk"+(++bkSeq);
 
 function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t.innerHTML:brekusz("0 0 100 71","bk-mark"); }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
+const APP_VERSION = "2026-06-18-a";
+function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
+async function checkUpdate(){
+  if(state.mode!=="live") return;
+  try{
+    var res=await fetch(location.pathname+"?_="+Date.now(),{cache:"no-store"});
+    if(!res.ok) return;
+    var txt=await res.text();
+    var m=txt.match(/APP_VERSION\s*=\s*"([^"]+)"/);
+    if(m && m[1] && m[1]!==APP_VERSION) showUpdate();
+  }catch(e){}
+}
 const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH };
 
 /* ---------- dátum ---------- */
@@ -884,7 +935,7 @@ function clientView(){
 function loginView(){
   const labels={user:"Munkatárs",client:"Megrendelő",admin:"Admin"};
   if(!state.loginPick){
-    return headerHTML()+`<div class="login">${brekusz("0 0 100 80","bk-hero")}<h1>FRISCHPLANT</h1>
+    return headerHTML()+`<div class="login"><h1>Munkanapló</h1>
       <p>Válaszd ki, hogyan lépsz be.</p>
       <div class="rolepick">
         <button class="btn rolebtn" data-login="user">Munkatárs</button>
@@ -892,7 +943,7 @@ function loginView(){
         <button class="btn ghost rolebtn" data-login="admin">Admin</button>
       </div></div>`;
   }
-  return headerHTML()+`<div class="login">${brekusz("0 0 100 80","bk-hero")}<h1>FRISCHPLANT</h1>
+  return headerHTML()+`<div class="login"><h1>Munkanapló</h1>
     <p>Belépés mint <b>${labels[state.loginPick]}</b>.</p>
     <input id="pw" type="password" autocomplete="current-password" placeholder="jelszó">
     <button class="btn" id="signin">Belépés</button>
@@ -993,10 +1044,11 @@ function openConfirm(date){state.pending=date;
 /* statikus modal-gombok */
 $("#m-cancel").onclick=()=>{$("#modalbg").classList.add("hidden");state.pending=null;};
 $("#m-ok").onclick=()=>{const d=state.pending;$("#modalbg").classList.add("hidden");state.pending=null;if(d)save(d);};
+var _bu=document.getElementById("bkUpdate"); if(_bu) _bu.onclick=function(){ location.reload(); };
 
 /* ---------- indítás ---------- */
 (async function init(){
-  state.theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";
+  var _h=new Date().getHours(); state.theme = (_h>=6 && _h<20) ? "light" : "dark";
   document.documentElement.setAttribute("data-theme",state.theme);
   state.viewY=curY; state.viewM=curM;
   const live = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;
@@ -1005,6 +1057,8 @@ $("#m-ok").onclick=()=>{const d=state.pending;$("#modalbg").classList.add("hidde
       s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
     state.mode="live"; state.client=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
     state.client.auth.onAuthStateChange(async(_e,sess)=>{ if(sess){ state.email=sess.user.email; state.role=roleForEmail(state.email); state.loginPick=null; state.viewY=curY; state.viewM=curM; await refresh(); } else { state.email=null; render(); } });
+    setTimeout(checkUpdate, 3000); setInterval(checkUpdate, 300000);
+    document.addEventListener("visibilitychange", function(){ if(!document.hidden) checkUpdate(); });
     const {data:{session}}=await state.client.auth.getSession();
     if(session){ state.email=session.user.email; state.role=roleForEmail(state.email); state.viewY=curY; state.viewM=curM; await refresh(); } else render();
   } else {
