@@ -60,7 +60,13 @@ body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui
 header{padding:24px 2px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:flex-end;gap:12px;min-width:0}
 .hd-in{padding:18px 2px 12px}
-.hd-ctlbar{display:flex;justify-content:flex-end;gap:10px;margin-bottom:6px}
+.hd-ctlbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.hd-wx{display:flex;align-items:center;gap:13px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hd-wx .wx-item{display:inline-flex;align-items:center;gap:4px}
+.hd-wx .wx-item b{font-weight:600;color:var(--ink)}
+.hd-wx svg{opacity:.7}
+.hd-wx .wx-muted{opacity:.5}
+.hd-btns{display:flex;gap:10px;align-items:center;flex:none}
 .hd-main{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
 .hd-main .wm{min-width:0}
 .hd-main .bk-scene{flex:none}
@@ -708,7 +714,17 @@ async function checkUpdate(){
     if(m && m[1] && m[1]!==APP_VERSION) showUpdate();
   }catch(e){}
 }
-const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH };
+const ICON_THERMO=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V5a2 2 0 0 0-4 0v9.76a4 4 0 1 0 4 0Z"/></svg>`;
+const ICON_DROP=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7s6 6.5 6 10.3a6 6 0 0 1-12 0c0-3.8 6-10.3 6-10.3Z"/></svg>`;
+function wxHTML(){ if(!state.wx) return `<span class="wx-muted">—</span>`; return `<span class="wx-item">${ICON_THERMO}<b>${state.wx.t}°C</b></span><span class="wx-item">${ICON_DROP}<b>${state.wx.h}%</b></span>`; }
+async function loadWx(){
+  try{
+    var url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.RAIN_LAT}&longitude=${CONFIG.RAIN_LON}&current=temperature_2m,relative_humidity_2m&timezone=Europe%2FBudapest`;
+    var res=await fetch(url); if(!res.ok) return; var j=await res.json(); var c=j.current;
+    if(c && c.temperature_2m!=null){ state.wx={t:Math.round(c.temperature_2m), h:Math.round(c.relative_humidity_2m)}; var el=document.getElementById("hdWx"); if(el) el.innerHTML=wxHTML(); }
+  }catch(e){}
+}
+const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, wx:null, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH };
 
 /* ---------- dátum ---------- */
 const now=new Date();
@@ -807,7 +823,7 @@ function headerHTML(){
     const badge = state.role==="admin"?"adminisztrátor":(state.role==="client"?"megrendelő · csak olvasás":"munkatárs");
     const logoutBtn=`<button class="icon-btn" id="logout" title="kijelentkezés">${ICON_LOGOUT}</button>`;
     return `<header class="hd-in">
-      <div class="hd-ctlbar">${themeBtn}${logoutBtn}</div>
+      <div class="hd-ctlbar"><div class="hd-wx" id="hdWx">${wxHTML()}</div><div class="hd-btns">${themeBtn}${logoutBtn}</div></div>
       <div class="hd-main"><div class="wm"><div class="title-h">FRISCHPLANT</div><div class="sub">${subtitle}</div><span class="badge hd-badge">${badge}</span></div>${brekuszScene()}</div>
     </header>`;
   }
@@ -1070,7 +1086,8 @@ var _bu=document.getElementById("bkUpdate"); if(_bu) _bu.onclick=function(){ loc
     state.mode="live"; state.client=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
     state.client.auth.onAuthStateChange(async(_e,sess)=>{ if(sess){ state.email=sess.user.email; state.role=roleForEmail(state.email); state.loginPick=null; state.viewY=curY; state.viewM=curM; await refresh(); } else { state.email=null; render(); } });
     setTimeout(checkUpdate, 3000); setInterval(checkUpdate, 300000);
-    document.addEventListener("visibilitychange", function(){ if(!document.hidden) checkUpdate(); });
+    loadWx(); setInterval(loadWx, 1200000);
+    document.addEventListener("visibilitychange", function(){ if(!document.hidden){ checkUpdate(); loadWx(); } });
     const {data:{session}}=await state.client.auth.getSession();
     if(session){ state.email=session.user.email; state.role=roleForEmail(state.email); state.viewY=curY; state.viewM=curM; await refresh(); } else render();
   } else {
