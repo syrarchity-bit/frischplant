@@ -67,11 +67,11 @@ header{padding:24px 2px 12px;display:flex;align-items:flex-start;justify-content
 .hd-wx svg{opacity:.7}
 .hd-wx .wx-muted{opacity:.5}
 .hd-btns{display:flex;gap:10px;align-items:center;flex:none}
-.hd-main{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
+.hd-main{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:12px}
 .hd-main .wm{min-width:0}
 .hd-main .bk-scene{flex:none}
 .hd-badge{margin-top:8px}
-@media(max-width:430px){.hd-main{gap:10px}}
+@media(max-width:430px){.hd-main{gap:10px}.hd-wx{gap:9px;font-size:12px}}
 .title-h{font-family:"Fraunces",serif;font-weight:700;font-size:26px;letter-spacing:-.01em;line-height:1;margin:0}
 .wm .sub{margin-top:4px;font-size:13px;color:var(--muted);text-transform:lowercase;letter-spacing:.02em}
 .bk-mark{width:54px;height:auto;flex:none}
@@ -716,12 +716,23 @@ async function checkUpdate(){
 }
 const ICON_THERMO=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V5a2 2 0 0 0-4 0v9.76a4 4 0 1 0 4 0Z"/></svg>`;
 const ICON_DROP=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7s6 6.5 6 10.3a6 6 0 0 1-12 0c0-3.8 6-10.3 6-10.3Z"/></svg>`;
-function wxHTML(){ if(!state.wx) return `<span class="wx-muted">—</span>`; return `<span class="wx-item">${ICON_THERMO}<b>${state.wx.t}°C</b></span><span class="wx-item">${ICON_DROP}<b>${state.wx.h}%</b></span>`; }
+const ICON_RAIN=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="16" y1="19" x2="16" y2="21"/></svg>`;
+function wxHTML(){ if(!state.wx) return `<span class="wx-muted">—</span>`; var p=(state.wx.p==null)?"":`<span class="wx-item">${ICON_RAIN}<b>${state.wx.p}%</b></span>`; return `<span class="wx-item">${ICON_THERMO}<b>${state.wx.t}°C</b></span><span class="wx-item">${ICON_DROP}<b>${state.wx.h}%</b></span>${p}`; }
 async function loadWx(){
   try{
-    var url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.RAIN_LAT}&longitude=${CONFIG.RAIN_LON}&current=temperature_2m,relative_humidity_2m&timezone=Europe%2FBudapest`;
+    var url=`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.RAIN_LAT}&longitude=${CONFIG.RAIN_LON}&current=temperature_2m,relative_humidity_2m&hourly=precipitation_probability&forecast_days=1&timezone=Europe%2FBudapest`;
     var res=await fetch(url); if(!res.ok) return; var j=await res.json(); var c=j.current;
-    if(c && c.temperature_2m!=null){ state.wx={t:Math.round(c.temperature_2m), h:Math.round(c.relative_humidity_2m)}; var el=document.getElementById("hdWx"); if(el) el.innerHTML=wxHTML(); }
+    if(c && c.temperature_2m!=null){
+      var pop=null;
+      if(j.hourly && j.hourly.time && j.hourly.precipitation_probability){
+        var key=String(c.time||"").slice(0,13);
+        var idx=j.hourly.time.findIndex(function(t){ return String(t).slice(0,13)===key; });
+        if(idx<0) idx=0;
+        pop=j.hourly.precipitation_probability[idx];
+      }
+      state.wx={t:Math.round(c.temperature_2m), h:Math.round(c.relative_humidity_2m), p:(pop==null?null:Math.round(pop))};
+      var el=document.getElementById("hdWx"); if(el) el.innerHTML=wxHTML();
+    }
   }catch(e){}
 }
 const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, wx:null, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH };
