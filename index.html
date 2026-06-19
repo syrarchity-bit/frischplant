@@ -1132,7 +1132,7 @@ function monthNav(){
     <span class="lbl">${state.viewY}. ${huMonth(state.viewY,state.viewM)}</span>
     <button data-mnav="1" title="következő hónap"${isCurMonth()?" disabled":""}>›</button></div>`;}
 function exportRow(){
-  return `<div class="exprow"><button class="btn ghost" data-export="csv">CSV letöltése</button><button class="btn ghost" data-export="pdf">PDF / nyomtatás</button></div>`;}
+  return `<div class="exprow"><button class="btn ghost" data-export="csv">CSV letöltése</button><button class="btn ghost" data-export="pdf">PDF letöltése</button></div>`;}
 
 /* ---------- összesítő-építők ---------- */
 function monthAgg(){
@@ -1293,6 +1293,36 @@ function exportCSV(){
   const url=URL.createObjectURL(blob), link=document.createElement("a");
   link.href=url; link.download=`frischplant-${y}-${pad(m)}.csv`; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
 }
+let _pdfLib=null;
+function _loadPdfScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s);});}
+function ensureJsPDF(){
+  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve();
+  if(!_pdfLib)_pdfLib=_loadPdfScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(()=>_loadPdfScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"));
+  return _pdfLib;
+}
+async function exportPDF(){
+  const btns=document.querySelectorAll('[data-export="pdf"]');
+  btns.forEach(b=>{ if(!b.dataset._lbl) b.dataset._lbl=b.textContent; b.textContent="PDF készül…"; b.disabled=true; });
+  try{ await ensureJsPDF(); }
+  catch(e){ alert("A PDF-hez internetkapcsolat kell (a könyvtár nem töltődött be). Próbáld újra online."); btns.forEach(b=>{b.textContent=b.dataset._lbl;b.disabled=false;}); return; }
+  const { jsPDF }=window.jspdf;
+  const a=monthAgg(), y=state.viewY, m=state.viewM, dim=a.dim, r=rainAgg();
+  const doc=new jsPDF({orientation:"landscape",unit:"pt",format:"a4"});
+  doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(31,80,55);
+  doc.text(`FRISCHPLANT  —  ${huMonth(y,m)}`,40,42);
+  doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(90);
+  doc.text(`Összes óra: ${fmt(a.crew)}  ·  A: ${fmt(a.hA)}  B: ${fmt(a.hB)}  C: ${fmt(a.hC)}  D: ${fmt(a.hD)}  ·  Össz km: ${fmt(a.kmTotal)}  ·  Csapadék: ${r.ok?fmt(r.total)+" mm":"—"}  ·  Munkanap: ${a.filledDays}`,40,60);
+  doc.setTextColor(20);
+  const head=[["Nap","A","B","C","D","Fej.össz","locs.","tány.","takar.","karó","felm.","QTA","kert.","admin","km","mm"]];
+  const body=[];
+  for(let n=1;n<=dim;n++){ const date=`${y}-${pad(m)}-${pad(n)}`, e=state.entries[date]||blank(), rain=rainFor(date);
+    body.push([pad(n),e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):"")]); }
+  const foot=[["Össz.","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(r.ok?fmt(r.total):"")]];
+  doc.autoTable({head,body,foot,startY:74,theme:"grid",styles:{fontSize:8,cellPadding:3,halign:"center"},headStyles:{fillColor:[47,125,79],halign:"center"},footStyles:{fillColor:[230,240,233],textColor:20,fontStyle:"bold"},columnStyles:{0:{cellWidth:34}}});
+  const blob=doc.output("blob"), url=URL.createObjectURL(blob), link=document.createElement("a");
+  link.href=url; link.download=`frischplant-${y}-${pad(m)}.pdf`; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+  btns.forEach(b=>{b.textContent=b.dataset._lbl;b.disabled=false;});
+}
 
 /* ---------- render + események ---------- */
 function startScene(){
@@ -1354,7 +1384,8 @@ function bindMain(){
   document.querySelectorAll(".demo-bar .toggle button[data-role]").forEach(b=>b.onclick=()=>setRole(b.dataset.role));
   document.querySelectorAll(".adminnav button[data-tab]").forEach(b=>b.onclick=()=>{state.adminTab=b.dataset.tab;state.openDate=null;render();});
   document.querySelectorAll("[data-mnav]").forEach(b=>b.onclick=()=>{ let m=state.viewM+parseInt(b.dataset.mnav,10),y=state.viewY; if(m<1){m=12;y--;} if(m>12){m=1;y++;} if(y>curY||(y===curY&&m>curM)) return; state.viewY=y;state.viewM=m;state.openDate=null;refresh(); });
-  document.querySelectorAll("[data-export]").forEach(b=>b.onclick=()=>{ b.dataset.export==="csv"?exportCSV():window.print(); });
+  document.querySelectorAll("[data-export]").forEach(b=>b.onclick=()=>{ b.dataset.export==="csv"?exportCSV():exportPDF(); });
+  if(document.querySelector('[data-export="pdf"]')) ensureJsPDF().catch(()=>{});
   const lo=$("#logout"); if(lo) lo.onclick=async()=>{ await state.client.auth.signOut(); state.email=null; state.role="user"; state.loginPick=null; render(); };
   document.querySelectorAll("[data-toggle]").forEach(btn=>btn.onclick=()=>{const dt=btn.dataset.toggle;state.openDate=state.openDate===dt?null:dt;render();});
   document.querySelectorAll("input[data-field],textarea[data-field]").forEach(el=>el.addEventListener("input",()=>{
