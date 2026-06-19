@@ -38,23 +38,23 @@ const CONFIG = {
 
 <style>
 :root{
-  --bg:#f5f3ec; --surface:#ffffff; --ink:#1d2922; --muted:#6c766e;
+  --bg:#c2e7f6; --surface:#ffffff; --ink:#1d2922; --muted:#6c766e;
   --accent:#2f7d4f; --accent-d:#256340; --accent-soft:#e7f0e9;
   --line:#e4e1d8; --line-2:#eeece4; --field:#fcfcfa;
   --miss:#d24b4b; --miss-soft:#fbeceb; --rain:#2f6fbf; --rain-soft:rgba(47,111,191,.10);
-  --r:16px; --sh:0 1px 2px rgba(29,41,34,.05), 0 8px 24px -16px rgba(29,41,34,.25);
+  --glow:rgba(255,255,255,.14); --r:16px; --sh:0 1px 2px rgba(29,41,34,.05), 0 8px 24px -16px rgba(29,41,34,.25);
 }
 [data-theme="dark"]{
   --bg:#12171a; --surface:#1b2226; --ink:#e9ede9; --muted:#98a39b;
   --accent:#4fa873; --accent-d:#73c293; --accent-soft:rgba(79,168,115,.16);
   --line:#2a3338; --line-2:#222a2e; --field:#161c1f;
   --miss:#e16a6a; --miss-soft:rgba(225,106,106,.15); --rain:#7fb1f0; --rain-soft:rgba(127,177,240,.14);
-  --sh:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
+  --glow:rgba(47,125,79,.05); --sh:0 1px 2px rgba(0,0,0,.3), 0 10px 26px -16px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
-  background-image:radial-gradient(120% 80% at 100% 0%,rgba(47,125,79,.05),transparent 60%),radial-gradient(100% 70% at 0% 100%,rgba(47,125,79,.04),transparent 55%);
+  background-image:radial-gradient(120% 80% at 100% 0%,var(--glow),transparent 60%),radial-gradient(100% 70% at 0% 100%,var(--glow),transparent 55%);
   min-height:100dvh;padding:0 16px env(safe-area-inset-bottom) 16px;transition:background .25s,color .25s}
 .wrap{max-width:720px;margin:0 auto;position:relative;z-index:1}
 
