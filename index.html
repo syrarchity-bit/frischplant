@@ -438,6 +438,43 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .sumline:last-child{border-bottom:0}
 .sumline .l{font-size:14px;color:var(--muted)}
 .sumline .v{font-family:"Fraunces",serif;font-weight:600;font-size:20px;color:var(--ink)}
+
+/* ---- harkály jelenet (jelszó-oldal hero) ---- */
+.hk-hero{max-width:300px;margin:22px auto 0}
+.hk-scene{display:block;width:100%;height:auto}
+.hk-scene .hk-hark-eye{transform-box:fill-box;transform-origin:center;animation:hkBlink 5.3s ease-in-out infinite}
+.hk-scene .hk-hark-eye-r{animation-delay:.05s}
+@keyframes hkBlink{0%,90%,100%{transform:scaleY(1)}93%,96%{transform:scaleY(.12)}}
+.hk-scene .hk-hark-bob{transform-box:fill-box;transform-origin:0px 4px;animation:hkBob .4s ease-in-out infinite}
+@keyframes hkBob{0%,100%{transform:translateX(0) rotate(0)}50%{transform:translateX(4px) rotate(4deg)}}
+.hk-scene .hk-chips{transform-box:fill-box;transform-origin:94px 33px;animation:hkChipPop .4s ease-in-out infinite}
+@keyframes hkChipPop{0%,55%{opacity:0;transform:translate(0,0)}60%{opacity:0.9}100%{opacity:0;transform:translate(5px,-3px)}}
+.hk-scene .hk-hark-night{display:none}
+[data-theme="dark"] .hk-scene .hk-hark-day{display:none}
+[data-theme="dark"] .hk-scene .hk-hark-night{display:inline}
+[data-theme="dark"] .hk-scene .hk-chips{display:none}
+[data-theme="dark"] .hk-scene .hk-hark-eye{animation:hkSleep 4s ease-in-out infinite}
+@keyframes hkSleep{0%{transform:scaleY(1)}18%{transform:scaleY(.1)}30%{transform:scaleY(.75)}45%{transform:scaleY(.1)}58%{transform:scaleY(.7)}72%{transform:scaleY(.1)}84%{transform:scaleY(.9)}100%{transform:scaleY(1)}}
+.hk-scene .hk-sun-core,.hk-scene .hk-sun-glow{transform-box:fill-box;transform-origin:center;animation:hkSunPulse 6s ease-in-out infinite}
+.hk-scene .hk-sun-rays{transform-box:fill-box;transform-origin:-26px -24px;animation:hkSunRays 6s ease-in-out infinite}
+@keyframes hkSunPulse{0%,100%{transform:scale(1);opacity:.92}50%{transform:scale(1.06);opacity:1}}
+@keyframes hkSunRays{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.12);opacity:1}}
+.hk-scene .hk-moon-glow{transform-box:fill-box;transform-origin:center;animation:hkSunPulse 7s ease-in-out infinite}
+.hk-scene .hk-star,.hk-scene .hk-starA,.hk-scene .hk-starB,.hk-scene .hk-starC{fill:#fdf8e8}
+.hk-scene .hk-star,.hk-scene .hk-starA{animation:hkTwinkle 2.8s ease-in-out infinite}
+.hk-scene .hk-starB{animation:hkTwinkle 3.6s ease-in-out infinite .7s}.hk-scene .hk-starC{animation:hkTwinkle 2.3s ease-in-out infinite 1.3s}
+@keyframes hkTwinkle{0%,100%{opacity:.25}50%{opacity:1}}
+.hk-scene .hk-scene-night{display:none}
+[data-theme="dark"] .hk-scene .hk-scene-sun{display:none}
+[data-theme="dark"] .hk-scene .hk-scene-night{display:inline}
+.hk-scene .hk-cloud-drift{transform-box:fill-box}
+.hk-scene .hk-driftA{animation:hkDriftA 11s ease-in-out infinite}
+.hk-scene .hk-driftB{animation:hkDriftB 14s ease-in-out infinite -5s}
+@keyframes hkDriftA{0%,100%{transform:translate(0,0)}30%{transform:translate(7px,-2px)}65%{transform:translate(-4px,1.5px)}}
+@keyframes hkDriftB{0%,100%{transform:translate(0,0)}40%{transform:translate(-6px,2px)}70%{transform:translate(5px,-1.5px)}}
+[data-theme="dark"] .hk-scene .hk-cloud-drift{display:none}
+@media(max-width:480px){.hk-hero{max-width:260px}}
+@media(max-width:360px){.hk-hero{max-width:230px}}
 </style>
 </head>
 <body>
@@ -762,6 +799,111 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
     <ellipse cx="32" cy="62" rx="4" ry="2.5" fill="#e89868" opacity="0.5"/>
     <ellipse cx="68" cy="62" rx="4" ry="2.5" fill="#e89868" opacity="0.5"/></g></g>
 </svg></template>
+<template id="hkSceneTpl"><svg class="hk-scene" viewBox="-62 -82 264 176" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyDay" x1="0" y1="0" x2="0.15" y2="1"><stop offset="0%" stop-color="#6ec1ec"/><stop offset="38%" stop-color="#a3dbf0"/><stop offset="72%" stop-color="#cdeede"/><stop offset="100%" stop-color="#ecf6df"/></linearGradient>
+    <linearGradient id="skyNight" x1="0" y1="0" x2="0.12" y2="1"><stop offset="0%" stop-color="#172445"/><stop offset="55%" stop-color="#293a60"/><stop offset="100%" stop-color="#3c4f76"/></linearGradient>
+    <radialGradient id="skyGlowD" cx="22%" cy="20%" r="60%"><stop offset="0%" stop-color="#fff6d8" stop-opacity="0.5"/><stop offset="100%" stop-color="#fff6d8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="skyBlotch" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4f9fd4" stop-opacity="0.5"/><stop offset="60%" stop-color="#5aa6d6" stop-opacity="0.16"/><stop offset="100%" stop-color="#5aa6d6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ffe27a" stop-opacity="0.95"/><stop offset="45%" stop-color="#ffd21a" stop-opacity="0.45"/><stop offset="100%" stop-color="#ffd21a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#e4ecf6" stop-opacity="0.55"/><stop offset="55%" stop-color="#cdd8e8" stop-opacity="0.2"/><stop offset="100%" stop-color="#cdd8e8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="grassGrad" cx="42%" cy="28%" r="82%"><stop offset="0%" stop-color="#aad778"/><stop offset="55%" stop-color="#84bb52"/><stop offset="100%" stop-color="#62a03c"/></radialGradient>
+    <linearGradient id="barkGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7a5a38"/><stop offset="45%" stop-color="#9a7a52"/><stop offset="100%" stop-color="#5e4226"/></linearGradient>
+    <path id="starShape" d="M 0 -2.6 Q 0.5 -0.5 2.6 0 Q 0.5 0.5 0 2.6 Q -0.5 0.5 -2.6 0 Q -0.5 -0.5 0 -2.6 Z"/>
+    <radialGradient id="harkBody" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#56514a"/><stop offset="100%" stop-color="#3a352f"/>
+    </radialGradient><radialGradient id="harkBelly" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#f6eed9"/><stop offset="100%" stop-color="#e6dabb"/>
+    </radialGradient>
+  </defs>
+  
+  
+  
+  
+        <g class="hk-scene-sun">
+          <circle class="hk-sun-glow" cx="-30" cy="-28" r="28" fill="url(#sunGlow)"/>
+          <g class="hk-sun-rays" stroke="#f5c518" stroke-width="2" stroke-linecap="round">
+            <line x1="-30" y1="-48" x2="-30" y2="-55"/>
+            <line x1="-15" y1="-43" x2="-10" y2="-48"/>
+            <line x1="-8" y1="-28" x2="-1" y2="-28"/>
+            <line x1="-15" y1="-13" x2="-10" y2="-8"/>
+            <line x1="-45" y1="-43" x2="-50" y2="-48"/>
+          </g>
+          <circle class="hk-sun-core" cx="-30" cy="-28" r="10" fill="#ffd21a"/>
+        </g>
+        <g class="hk-scene-night">
+          <circle class="hk-moon-glow" cx="-29" cy="-27" r="27" fill="url(#moonGlow)"/>
+          <path class="hk-moon" d="M -27 -42 A 15 15 0 1 0 -27 -12 A 19 19 0 0 1 -27 -42 Z" fill="#f1ecda"/>
+          <use href="#starShape" class="hk-star hk-starB" transform="translate(-9 -42) scale(0.85)"/>
+          <use href="#starShape" class="hk-star hk-starC" transform="translate(-4 -22) scale(0.7)"/>
+          <use href="#starShape" class="hk-star hk-starA" transform="translate(-15 -7) scale(0.6)"/>
+          <use href="#starShape" class="hk-star hk-starA" transform="translate(12 -46) scale(1)"/>
+          <use href="#starShape" class="hk-star hk-starB" transform="translate(30 -52) scale(1.3)"/>
+          <use href="#starShape" class="hk-star hk-starC" transform="translate(54 -45) scale(0.9)"/>
+          <use href="#starShape" class="hk-star hk-starA" transform="translate(72 -53) scale(1.15)"/>
+          <use href="#starShape" class="hk-star hk-starB" transform="translate(92 -40) scale(0.85)"/>
+          <use href="#starShape" class="hk-star hk-starC" transform="translate(108 -50) scale(1)"/>
+          <use href="#starShape" class="hk-star hk-starA" transform="translate(44 -56) scale(0.7)"/>
+          <use href="#starShape" class="hk-star hk-starB" transform="translate(124 -34) scale(0.8)"/>
+        </g>
+  <g transform="translate(20,-58) scale(1.1776,0.8280000000000001)"><g class="hk-cloud-drift hk-driftA"><ellipse cx="13" cy="6" rx="24" ry="6.5" fill="#ffffff" opacity="0.95"/><circle cx="0" cy="2" r="7.5" fill="#ffffff"/><circle cx="10" cy="-3" r="10.5" fill="#ffffff"/><circle cx="22" cy="-1" r="9" fill="#ffffff"/><circle cx="30" cy="3" r="7" fill="#ffffff"/><circle cx="16" cy="3" r="8.5" fill="#ffffff"/><ellipse cx="10" cy="-4" rx="11" ry="5" fill="#f4fbff" opacity="0.8"/></g></g><g transform="translate(-18,-50) scale(0.8959999999999999,0.63)"><g class="hk-cloud-drift hk-driftB"><ellipse cx="13" cy="6" rx="24" ry="6.5" fill="#ffffff" opacity="0.95"/><circle cx="0" cy="2" r="7.5" fill="#ffffff"/><circle cx="10" cy="-3" r="10.5" fill="#ffffff"/><circle cx="22" cy="-1" r="9" fill="#ffffff"/><circle cx="30" cy="3" r="7" fill="#ffffff"/><circle cx="16" cy="3" r="8.5" fill="#ffffff"/><ellipse cx="10" cy="-4" rx="11" ry="5" fill="#f4fbff" opacity="0.8"/></g></g>
+  <path d="M -61 74 C -60 67 -50 63 -28 58 C -6 61 16 54 38 57 C 62 60 88 54 114 58 C 140 61 162 58 159 72 C 161 84 141 91 116 92 C 90 93 62 87 38 90 C 10 93 -18 89 -40 89 C -52 89 -59 81 -61 74 Z" fill="url(#grassGrad)" stroke="#5fa23a" stroke-width="1.4"/><path d="M -48 60 Q 24 56 96 63" stroke="#bfe39a" stroke-width="1.2" fill="none" opacity="0.5"/>
+  <g><path d="M 86 70 Q 92 60 96 62 L 96 70 Z M 134 70 Q 128 60 124 62 L 124 70 Z" fill="#5e4528"/><path d="M 97 70 C 93 50 95 30 99 6 C 100 0 120 0 121 6 C 125 30 127 50 123 70 C 116 73 104 73 97 70 Z" fill="url(#barkGrad)" stroke="#4a3620" stroke-width="1"/><g stroke="#4a3620" stroke-width="1.1" fill="none" opacity="0.55" stroke-linecap="round"><path d="M 104 64 Q 102 44 105 22 Q 106 14 105 8"/><path d="M 112 66 Q 113 46 111 26 Q 110 16 112 8"/><path d="M 118 64 Q 120 48 118 30 Q 117 20 119 10"/></g><ellipse cx="109" cy="40" rx="4.5" ry="6" fill="#3a2a18" opacity="0.7"/></g>
+  <g><circle cx="78" cy="-18" r="26" fill="#4f8f33"/><circle cx="150" cy="-18" r="26" fill="#4f8f33"/><circle cx="110" cy="-34" r="34" fill="#4f8f33"/><circle cx="96" cy="-2" r="26" fill="#4f8f33"/><circle cx="132" cy="-2" r="26" fill="#4f8f33"/><circle cx="114" cy="2" r="24" fill="#4f8f33"/><circle cx="104" cy="-40" r="20" fill="#67ab46"/><circle cx="84" cy="-22" r="16" fill="#67ab46"/><circle cx="140" cy="-22" r="16" fill="#67ab46"/><circle cx="118" cy="-30" r="18" fill="#67ab46"/><circle cx="98" cy="-46" r="12" fill="#7fbf57"/><circle cx="122" cy="-44" r="11" fill="#7fbf57"/><circle cx="110" cy="-50" r="10" fill="#8fcb63"/></g>
+  
+  
+<g><path d="M 99 50 Q 87 49 73 44" stroke="url(#barkGrad)" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M 99 50 Q 87 49 73 44" stroke="#4a3620" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.4"/><path d="M 80 46 Q 78 40 80 35" stroke="url(#barkGrad)" stroke-width="2.4" fill="none" stroke-linecap="round"/><g><circle cx="69" cy="41" r="11" fill="#4f8f33"/><circle cx="63" cy="44" r="8" fill="#4f8f33"/><circle cx="75" cy="43" r="8" fill="#4f8f33"/><circle cx="68" cy="35" r="8" fill="#67ab46"/><circle cx="72" cy="38" r="6" fill="#7fbf57"/><circle cx="64" cy="39" r="5" fill="#7fbf57"/></g><g><circle cx="80" cy="33" r="6" fill="#4f8f33"/><circle cx="83" cy="31" r="5" fill="#67ab46"/></g></g><g class="hk-hark-day" transform="translate(80 28) scale(0.6)"><g class="hk-hark-side">
+  <g stroke="#d4a24a" stroke-width="1.8" stroke-linecap="round" fill="none">
+    <path d="M -1 20 q -3 4 -5 4 M -1 20 q 0 5 -1 7"/>
+    <path d="M 4 20 q 3 4 6 4 M 4 20 q 1 5 2 6"/>
+  </g>
+  <path d="M -7 11 Q -18 16 -16 23 Q -11 21 -4 17 Z" fill="#3a352f"/>
+  <g class="hk-hark-bob">
+    <ellipse cx="0" cy="4" rx="12" ry="15" fill="url(#harkBody)" transform="rotate(7 0 4)"/>
+    <ellipse cx="4" cy="6" rx="7" ry="11" fill="url(#harkBelly)" transform="rotate(7 4 6)"/>
+    <g fill="#f1e8d2" opacity="0.9"><circle cx="-5" cy="0" r="1.6"/><circle cx="-6" cy="7" r="1.4"/><circle cx="-4" cy="13" r="1.2"/></g>
+    <circle cx="3" cy="-13" r="10" fill="url(#harkBody)"/>
+    <path d="M 4 -22 Q 14 -21 14 -12 Q 14 -4 5 -3 Q 2 -8 2 -13 Q 2 -18 4 -22 Z" fill="url(#harkBelly)"/>
+    <path d="M 13 -14 L 27 -12 L 13 -10 Z" fill="#d4a24a"/>
+    <path d="M 13 -12 L 26 -12" stroke="#b07f2c" stroke-width="0.8" opacity="0.6"/>
+    <g class="hk-hark-eye"><circle cx="5" cy="-15" r="4.6" fill="#fefcf6"/><circle cx="6.6" cy="-14.4" r="2.5" fill="#1a1816"/><circle cx="7.6" cy="-15.6" r="0.9" fill="#fefcf6"/></g>
+    <path d="M -5 -20 Q -3 -31 2 -24 Q 5 -32 8 -23 Q 12 -28 10 -19 Q 2 -17 -5 -20 Z" fill="#d6453f"/>
+  </g>
+</g></g><g class="hk-hark-night" transform="translate(60 8) scale(0.42)"><g class="hk-hark-float"><!-- lábak -->
+    <path d="M 42 84 l -4 5 M 42 84 l 0 6 M 42 84 l 4 5" stroke="#d4a24a" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <path d="M 58 84 l -4 5 M 58 84 l 0 6 M 58 84 l 4 5" stroke="#d4a24a" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <!-- farktoll -->
+    <path d="M 50 70 Q 44 84 48 86 L 52 86 Q 56 84 50 70 Z" fill="#46423b"/>
+    <!-- fő test -->
+    <ellipse cx="50" cy="50" rx="28" ry="31" fill="url(#harkBody)"/>
+    <!-- has/arc (krém) -->
+    <ellipse cx="50" cy="54" rx="19" ry="26" fill="url(#harkBelly)"/>
+    <!-- szárny-pöttyök (fakopáncs-minta) a sötét peremen -->
+    <g fill="#f1e8d2" opacity="0.9">
+      <circle cx="26" cy="48" r="2.2"/><circle cx="24" cy="58" r="2"/><circle cx="28" cy="68" r="1.8"/>
+      <circle cx="74" cy="48" r="2.2"/><circle cx="76" cy="58" r="2"/><circle cx="72" cy="68" r="1.8"/>
+    </g>
+    <!-- piros taréj -->
+    <path d="M 35 24 Q 37 9 45 18 Q 49 5 53 18 Q 61 8 64 24 Q 50 29 35 24 Z" fill="#d6453f"/>
+    <path d="M 40 22 Q 44 14 48 20 Q 52 13 55 21" stroke="#b8352f" stroke-width="1" fill="none" opacity="0.5"/>
+    <!-- szemek -->
+    <g class="hk-hark-eye hk-hark-eye-l">
+      <circle cx="40" cy="40" r="8.5" fill="#fefcf6"/>
+      <circle cx="41.5" cy="41" r="4" fill="#1a1816"/>
+      <circle cx="43" cy="39.5" r="1.6" fill="#fefcf6"/>
+    </g>
+    <g class="hk-hark-eye hk-hark-eye-r">
+      <circle cx="60" cy="40" r="8.5" fill="#fefcf6"/>
+      <circle cx="58.5" cy="41" r="4" fill="#1a1816"/>
+      <circle cx="60" cy="39.5" r="1.6" fill="#fefcf6"/>
+    </g>
+    <!-- csőr -->
+    <path d="M 44 48 L 50 66 L 56 48 Q 50 51 44 48 Z" fill="#d4a24a"/>
+    <path d="M 50 51 L 50 64" stroke="#b07f2c" stroke-width="0.9" opacity="0.6"/>
+    <!-- arcpír -->
+    <ellipse cx="33" cy="50" rx="3.8" ry="2.4" fill="#e89868" opacity="0.5"/>
+    <ellipse cx="67" cy="50" rx="3.8" ry="2.4" fill="#e89868" opacity="0.5"/></g></g><g class="hk-chips" fill="#c9a473"><path d="M 92 31 l 4 -1 -1 3.5 Z"/><path d="M 93 36 l 4 1.5 -2.5 2.5 Z"/></g>
+</svg></template>
 
 <div class="wrap" id="app"></div>
 
@@ -831,6 +973,7 @@ function brekusz(viewBox,cls){ const id="bk"+(++bkSeq);
 
 function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t.innerHTML:brekusz("0 0 100 71","bk-mark"); }
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
+function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
 const APP_VERSION = "2026-06-18-a";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
@@ -1125,7 +1268,8 @@ function loginView(){
     <input id="pw" type="password" autocomplete="current-password" placeholder="jelszó">
     <button class="btn" id="signin">Belépés</button>
     <button class="linkbtn" id="loginback" style="display:block;margin:14px auto 0">← másik belépés</button>
-    <div class="note-sm" id="loginmsg"></div></div>`;
+    <div class="note-sm" id="loginmsg"></div>
+      <div class="hk-hero" aria-hidden="true">${harkalyScene()}</div></div>`;
 }
 
 /* ---------- export ---------- */
