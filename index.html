@@ -433,6 +433,11 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 [data-theme="dark"] .sn-scene .sn-cloud-drift{display:none}
 @media(max-width:480px){.sn-hero{max-width:260px}}
 @media(max-width:360px){.sn-hero{max-width:230px}}
+/* ---- munkatárs havi összesítő ---- */
+.sumline{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line-2)}
+.sumline:last-child{border-bottom:0}
+.sumline .l{font-size:14px;color:var(--muted)}
+.sumline .v{font-family:"Fraunces",serif;font-weight:600;font-size:20px;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -1028,11 +1033,18 @@ function dayCard(date,kind,locked){
       <div class="dmeta"><div class="dweek">${huWeek(d)}</div><div class="ddate">${huFull(d)}</div></div>${tag}</div>
     <div class="edit-pad">${editorHTML(date,locked)}</div></div>`;
 }
+function workerSummaryCard(a){
+  return `<div class="sum-card"><h4>Havi összesítés — ${huMonth(curY,curM)}</h4>
+    <div class="sumline"><span class="l">A össz. munkaóra</span><span class="v">${fmt(a.hA)} ó</span></div>
+    <div class="sumline"><span class="l">B össz. munkaóra</span><span class="v">${fmt(a.hB)} ó</span></div>
+    <div class="sumline"><span class="l">Össz. autózott km</span><span class="v">${fmt(a.kmTotal)} km</span></div></div>`;
+}
 function userView(){
   let h=headerHTML()+demoBar();
   const yMissing = yesterdayInCurMonth && !hasHours(state.entries[YEST]||blank());
   if(yMissing){ h+=dayCard(YEST,"prev",false); h+=dayCard(TODAY,"now",true); }
   else h+=dayCard(TODAY,"now",false);
+  h+=workerSummaryCard(monthAgg());
   h+=`<div class="foot">FRISCHPLANT · ${huMonth(curY,curM)} · munkatárs nézet</div>`;
   return h;
 }
