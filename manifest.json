@@ -1,0 +1,12 @@
+{
+  "name": "FRISCHPLANT",
+  "short_name": "FRISCHPLANT",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#a9def2",
+  "theme_color": "#6aa840",
+  "icons": [
+    { "src": "/frischplant-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/frischplant-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
