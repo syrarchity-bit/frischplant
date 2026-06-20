@@ -980,7 +980,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-18-a";
+const APP_VERSION = "2026-06-19-sw";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1401,7 +1401,29 @@ function openConfirm(date){state.pending=date;
 /* statikus modal-gombok */
 $("#m-cancel").onclick=()=>{$("#modalbg").classList.add("hidden");state.pending=null;};
 $("#m-ok").onclick=()=>{const d=state.pending;$("#modalbg").classList.add("hidden");state.pending=null;if(d)save(d);};
-var _bu=document.getElementById("bkUpdate"); if(_bu) _bu.onclick=function(){ location.reload(); };
+var swReg=null;
+async function updateNow(){
+  var bar=document.getElementById("bkUpdate"); if(bar) bar.classList.add("updating");
+  try{
+    if(swReg){ try{ await swReg.update(); }catch(e){} if(swReg.waiting) swReg.waiting.postMessage("skipWaiting"); }
+    if("caches" in window){ var keys=await caches.keys(); await Promise.all(keys.map(function(k){ return caches.delete(k); })); }
+  }catch(e){}
+  setTimeout(function(){ location.reload(); }, 350);
+}
+var _bu=document.getElementById("bkUpdate"); if(_bu) _bu.onclick=updateNow;
+if("serviceWorker" in navigator){
+  window.addEventListener("load", async function(){
+    try{
+      swReg=await navigator.serviceWorker.register("./sw.js");
+      if(swReg.waiting && navigator.serviceWorker.controller) showUpdate();
+      swReg.addEventListener("updatefound", function(){
+        var nw=swReg.installing; if(!nw) return;
+        nw.addEventListener("statechange", function(){ if(nw.state==="installed" && navigator.serviceWorker.controller) showUpdate(); });
+      });
+      setTimeout(function(){ try{ swReg.update(); }catch(e){} }, 3000);
+    }catch(e){}
+  });
+}
 
 /* ---------- indítás ---------- */
 (async function init(){
