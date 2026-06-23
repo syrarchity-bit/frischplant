@@ -1008,7 +1008,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-21-a";
+const APP_VERSION = "2026-06-21-b";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1329,21 +1329,7 @@ function loginView(){
 }
 
 /* ---------- export ---------- */
-function exportCSV(){
-  const a=monthAgg(), y=state.viewY,m=state.viewM,dim=a.dim;
-  const head=["Dátum","A","B","C","D","Fejenkénti összes","locsolás","tányérozás","takarítás","karózás","felmérés","QTA","kertészeti","adminisztráció","Autózott km","Csapadék mm","Megjegyzés"];
-  const lines=[head.join(";")];
-  for(let n=1;n<=dim;n++){ const date=`${y}-${pad(m)}-${pad(n)}`, e=state.entries[date]||blank(), rain=rainFor(date);
-    const row=[date,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),
-      e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):""),(e.note||"").replace(/[;\n\r]/g," ")];
-    lines.push(row.join(";")); }
-  const r=rainAgg();
-  lines.push(["ÖSSZESEN","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(r.ok?fmt(r.total):""),""].join(";"));
-  const csv="\uFEFF"+lines.join("\r\n");
-  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-  const url=URL.createObjectURL(blob), link=document.createElement("a");
-  link.href=url; link.download=`frischplant-${y}-${pad(m)}.csv`; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
-}
+function exportCSV(){ const y=state.viewY,m=state.viewM; csvFor(state.entries,rainAgg(),`${y}-${pad(m)}-01`,`${y}-${pad(m)}-${pad(daysIn(y,m))}`,`frischplant-${y}-${pad(m)}`); }
 let _pdfLib=null;
 function _loadPdfScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s);});}
 function ensureJsPDF(){
@@ -1351,29 +1337,7 @@ function ensureJsPDF(){
   if(!_pdfLib)_pdfLib=_loadPdfScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(()=>_loadPdfScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"));
   return _pdfLib;
 }
-async function exportPDF(){
-  const btns=document.querySelectorAll('[data-export="pdf"]');
-  btns.forEach(b=>{ if(!b.dataset._lbl) b.dataset._lbl=b.textContent; b.textContent="PDF készül…"; b.disabled=true; });
-  try{ await ensureJsPDF(); }
-  catch(e){ alert("A PDF-hez internetkapcsolat kell (a könyvtár nem töltődött be). Próbáld újra online."); btns.forEach(b=>{b.textContent=b.dataset._lbl;b.disabled=false;}); return; }
-  const { jsPDF }=window.jspdf;
-  const a=monthAgg(), y=state.viewY, m=state.viewM, dim=a.dim, r=rainAgg();
-  const doc=new jsPDF({orientation:"landscape",unit:"pt",format:"a4"});
-  doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(31,80,55);
-  doc.text(`FRISCHPLANT  —  ${huMonth(y,m)}`,40,40);
-  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90);
-  doc.text(`Összes óra: ${fmt(a.crew)}  ·  A: ${fmt(a.hA)}  B: ${fmt(a.hB)}  C: ${fmt(a.hC)}  D: ${fmt(a.hD)}  ·  Össz km: ${fmt(a.kmTotal)}  ·  Csapadék: ${r.ok?fmt(r.total)+" mm":"—"}  ·  Munkanap: ${a.filledDays}`,40,57);
-  doc.setTextColor(20);
-  const head=[["Nap","A","B","C","D","Fej.össz","locs.","tány.","takar.","karó","felm.","QTA","kert.","admin","km","mm"]];
-  const body=[];
-  for(let n=1;n<=dim;n++){ const date=`${y}-${pad(m)}-${pad(n)}`, e=state.entries[date]||blank(), rain=rainFor(date);
-    body.push([pad(n),e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):"")]); }
-  const foot=[["Össz.","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(r.ok?fmt(r.total):"")]];
-  doc.autoTable({head,body,foot,startY:68,theme:"grid",showFoot:"lastPage",styles:{fontSize:7.5,cellPadding:2.5,halign:"center"},headStyles:{fillColor:[47,125,79],halign:"center"},footStyles:{fillColor:[230,240,233],textColor:20,fontStyle:"bold"},columnStyles:{0:{cellWidth:30}}});
-  const blob=doc.output("blob"), url=URL.createObjectURL(blob), link=document.createElement("a");
-  link.href=url; link.download=`frischplant-${y}-${pad(m)}.pdf`; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
-  btns.forEach(b=>{b.textContent=b.dataset._lbl;b.disabled=false;});
-}
+async function exportPDF(){ const y=state.viewY,m=state.viewM; await pdfRun(document.querySelectorAll('[data-export="pdf"]'), ()=>pdfFor(state.entries,rainAgg(),`${y}-${pad(m)}-01`,`${y}-${pad(m)}-${pad(daysIn(y,m))}`,huMonth(y,m),`frischplant-${y}-${pad(m)}`)); }
 
 /* ---------- időszak (tartomány) + diagram ---------- */
 function eachDate(fromIso,toIso,cb){
@@ -1465,6 +1429,25 @@ function chartCard(map,r,fromIso,toIso){
     <div class="big-sub">Oszlop: napi csapadék. Vonal: napi locsolási óra.</div></div>`;
 }
 function monthChartCard(){ const y=state.viewY,m=state.viewM,from=`${y}-${pad(m)}-01`,to=isCurMonth()?TODAY:`${y}-${pad(m)}-${pad(daysIn(y,m))}`; return chartCard(state.entries,rainAgg(),from,to); }
+function chartToPNG(map,r,fromIso,toIso){
+  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas)}); });
+  if(pts.length===0||pts.length>45) return null;
+  const sc=2,W=1000,H=300,padL=46,padR=46,padT=22, innerW=W-padL-padR, innerH=H-padT-30, n=pts.length;
+  const c=document.createElement("canvas"); c.width=W*sc; c.height=H*sc; const x=c.getContext("2d"); x.scale(sc,sc);
+  x.fillStyle="#ffffff"; x.fillRect(0,0,W,H);
+  const maxMM=Math.max(1,...pts.map(p=>p.mm)), maxLoc=Math.max(1,...pts.map(p=>p.loc));
+  const slot=innerW/n, bw=Math.max(4,Math.min(34,slot*0.6));
+  const yMM=v=>padT+innerH-(v/maxMM)*innerH, yLoc=v=>padT+innerH-(v/maxLoc)*innerH;
+  x.strokeStyle="#e2e2e2"; x.lineWidth=1; [0,0.5,1].forEach(f=>{ const yy=padT+innerH-f*innerH; x.beginPath(); x.moveTo(padL,yy); x.lineTo(W-padR,yy); x.stroke(); });
+  x.fillStyle="#4a90c2"; pts.forEach((p,i)=>{ if(p.mm>0){ const cx=padL+slot*i+slot/2, yy=yMM(p.mm); x.fillRect(cx-bw/2,yy,bw,padT+innerH-yy); } });
+  x.strokeStyle="#6aa840"; x.lineWidth=2.5; x.beginPath(); pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, yy=yLoc(p.loc); i===0?x.moveTo(cx,yy):x.lineTo(cx,yy); }); x.stroke();
+  x.fillStyle="#6aa840"; pts.forEach((p,i)=>{ if(p.loc>0){ const cx=padL+slot*i+slot/2, yy=yLoc(p.loc); x.beginPath(); x.arc(cx,yy,3.2,0,Math.PI*2); x.fill(); } });
+  x.font="13px sans-serif"; x.textAlign="left"; x.fillStyle="#4a90c2"; x.fillText(fmt(maxMM)+" mm",padL,padT-7);
+  x.textAlign="right"; x.fillStyle="#6aa840"; x.fillText(fmt(maxLoc)+" ó",W-padR,padT-7);
+  x.fillStyle="#888888"; x.font="12px sans-serif"; x.textAlign="center"; const stp=n<=20?1:Math.ceil(n/16);
+  pts.forEach((p,i)=>{ if(i%stp===0){ const cx=padL+slot*i+slot/2; x.fillText(String(p.n),cx,H-10); } });
+  return c.toDataURL("image/png");
+}
 
 /* időszaki összesítő panel */
 function rangeControls(){
@@ -1536,11 +1519,11 @@ function doRangeQuick(kind){
 /* általános CSV/PDF (havi és időszaki közös) */
 function csvFor(map,rainObj,fromIso,toIso,stem){
   const a=aggPeriod(map,fromIso,toIso);
-  const head=["Dátum","A","B","C","D","Fejenkénti összes","locsolás","tányérozás","takarítás","karózás","felmérés","QTA","kertészeti","adminisztráció","Autózott km","Csapadék mm","Megjegyzés"];
+  const head=["Dátum","A","B","C","D","Munkaóra összes","locsolás","tányérozás","takarítás","karózás","felmérés","QTA","kertészeti","adminisztráció","Autózott km","Csapadék mm","Megjegyzés"];
   const lines=[head.join(";")];
   eachDate(fromIso,toIso,(date)=>{ const e=map[date]||blank(), rain=(rainObj&&rainObj.ok&&rainObj.byDay[date]!=null)?rainObj.byDay[date]:null;
-    lines.push([date,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):""),(e.note||"").replace(/[;\n\r]/g," ")].join(";")); });
-  lines.push(["ÖSSZESEN","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):""),""].join(";"));
+    lines.push([date,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)+adminH(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):""),(e.note||"").replace(/[;\n\r]/g," ")].join(";")); });
+  lines.push(["ÖSSZESEN","","","","",fmt(a.crew+a.adminTotal),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):""),""].join(";"));
   const csv="\uFEFF"+lines.join("\r\n"), blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob), link=document.createElement("a");
   link.href=url; link.download=stem+".csv"; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
@@ -1552,14 +1535,29 @@ async function pdfFor(map,rainObj,fromIso,toIso,titleLabel,stem){
   doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(31,80,55);
   doc.text(`FRISCHPLANT  —  ${titleLabel}`,40,40);
   doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90);
-  doc.text(`Ossz ora: ${fmt(a.crew)}   A: ${fmt(a.hA)}  B: ${fmt(a.hB)}  C: ${fmt(a.hC)}  D: ${fmt(a.hD)}   Ossz km: ${fmt(a.kmTotal)}   Csapadek: ${rainObj&&rainObj.ok?fmt(rainObj.total)+" mm":"-"}   Munkanap: ${a.filledDays}`,40,57);
+  doc.text(`Ossz ora: ${fmt(a.crew+a.adminTotal)}   A: ${fmt(a.hA)}  B: ${fmt(a.hB)}  C: ${fmt(a.hC)}  D: ${fmt(a.hD)}   Ossz km: ${fmt(a.kmTotal)}   Csapadek: ${rainObj&&rainObj.ok?fmt(rainObj.total)+" mm":"-"}   Munkanap: ${a.filledDays}`,40,57);
   doc.setTextColor(20);
-  const head=[["Nap","A","B","C","D","Fej.ossz","locs.","tany.","takar.","karo","felm.","QTA","kert.","admin","km","mm"]];
+  const head=[["Nap","A","B","C","D","Munkaóra össz.","locs.","tany.","takar.","karo","felm.","QTA","kert.","admin","km","mm"]];
   const body=[];
   eachDate(fromIso,toIso,(date,d)=>{ const e=map[date]||blank(), rain=(rainObj&&rainObj.ok&&rainObj.byDay[date]!=null)?rainObj.byDay[date]:null;
-    body.push([`${pad(d.getMonth()+1)}.${pad(d.getDate())}`,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):"")]); });
-  const foot=[["Ossz.","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):"")]];
+    body.push([`${pad(d.getMonth()+1)}.${pad(d.getDate())}`,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)+adminH(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):"")]); });
+  const foot=[["Ossz.","","","","",fmt(a.crew+a.adminTotal),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):"")]];
   doc.autoTable({head,body,foot,startY:68,theme:"grid",showFoot:"lastPage",styles:{fontSize:7.5,cellPadding:2.5,halign:"center"},headStyles:{fillColor:[47,125,79],halign:"center"},footStyles:{fillColor:[230,240,233],textColor:20,fontStyle:"bold"},columnStyles:{0:{cellWidth:34}}});
+  try{
+    const _png=chartToPNG(map,rainObj,fromIso,toIso);
+    if(_png){
+      const pgH=doc.internal.pageSize.getHeight(), pgW=doc.internal.pageSize.getWidth();
+      let _y=(doc.lastAutoTable?doc.lastAutoTable.finalY:68)+18;
+      const _cw=Math.min(540,pgW-80), _ch=_cw*0.3;
+      if(_y+_ch+26>pgH-26){ doc.addPage(); _y=40; }
+      doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(31,80,55);
+      doc.text("Csapadék és locsolás",40,_y); _y+=8;
+      doc.addImage(_png,"PNG",40,_y,_cw,_ch);
+      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(120);
+      doc.text("Oszlop: napi csapadék (mm). Vonal: napi locsolási óra.",40,_y+_ch+12);
+      doc.setTextColor(20);
+    }
+  }catch(_e){}
   const blob=doc.output("blob"), url=URL.createObjectURL(blob), link=document.createElement("a");
   link.href=url; link.download=stem+".pdf"; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
