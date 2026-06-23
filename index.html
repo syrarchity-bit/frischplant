@@ -507,6 +507,9 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .sum-card.invoice .rate-row input{width:130px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:15px;text-align:right}
 .sumline.big{font-size:17px;font-weight:700;border-top:1px solid var(--line);margin-top:6px;padding-top:10px}
 .sumline.big .v{color:var(--accent)}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:12px 0}
+.segbtn{flex:1;padding:10px 8px;border:none;background:var(--surface);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer}
+.segbtn.on{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
@@ -1008,7 +1011,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-21-e";
+const APP_VERSION = "2026-06-21-f";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1041,7 +1044,7 @@ async function loadWx(){
     }
   }catch(e){}
 }
-const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, wx:null, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH, rangeActive:false, rangeFrom:null, rangeTo:null, rangeEntries:{}, rangeRain:{ok:false,byDay:{}}, rate:"", certNo:"" };
+const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, wx:null, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH, rangeActive:false, rangeFrom:null, rangeTo:null, rangeEntries:{}, rangeRain:{ok:false,byDay:{}}, rate:"", certNo:"", sumMode:"month" };
 
 /* ---------- dátum ---------- */
 const now=new Date();
@@ -1269,7 +1272,9 @@ function summaryView(){
   const a=monthAgg();
   const topAct=ACT.map(k=>({label:LABEL[k],h:a.actBy[k]})).reduce((p,c)=>c.h>p.h?c:p,{h:0,label:'—'});
   const avg=a.filledDays?a.crew/a.filledDays:0;
-  return headerHTML()+demoBar()+adminNav('summary')+monthNav()+exportRow()+
+  const range=state.sumMode==="range";
+  const seg=`<div class="seg"><button class="segbtn${range?"":" on"}" data-summode="month">Teljes hónap</button><button class="segbtn${range?" on":""}" data-summode="range">Rész időszak</button></div>`;
+  const monthHTML = monthNav()+exportRow()+
     `<div class="sum-card"><h4>Fejenkénti munkaóra (havi) — A–F</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–F összesen ${fmt(a.crew+a.adminTotal)} óra</div></div>
      <div class="sum-card"><h4>Tevékenység szerinti összóraszám (A–D)</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>
      ${kmCard(a)}
@@ -1284,9 +1289,9 @@ function summaryView(){
        <div class="t"><div class="l">Legtöbb idő (tev.)</div><div class="v" style="font-size:15px">${topAct.h>0?topAct.label:'—'}</div></div>
        <div class="t"><div class="l">Adminisztráció</div><div class="v">${fmt(a.adminTotal)} ó</div></div>
        <div class="t"><div class="l">Autózott km</div><div class="v">${fmt(a.kmTotal)} km</div></div>
-     </div></div>
-     ${rangeBlock(true)}
-     <div class="foot">FRISCHPLANT · havi összesítő, csak admin</div>`;
+     </div></div>`;
+  return headerHTML()+demoBar()+adminNav('summary')+seg+(range?rangeBlock(true):monthHTML)+
+    `<div class="foot">FRISCHPLANT · havi összesítő, csak admin</div>`;
 }
 function clientView(){
   const a=monthAgg();
@@ -1661,6 +1666,7 @@ function bindMain(){
   document.querySelectorAll("[data-export-range]").forEach(b=>b.onclick=()=>{ b.dataset.exportRange==="csv"?rangeCSV():rangePDF(); });
   const rateEl=$("#rate"); if(rateEl) rateEl.addEventListener("input",()=>{ state.rate=rateEl.value; const ra=aggPeriod(state.rangeEntries,state.rangeFrom,state.rangeTo); document.querySelectorAll("[data-invoice-total]").forEach(el=>el.textContent=invoiceText(ra.crew+ra.adminTotal)); });
   const certEl=$("#certNo"); if(certEl) certEl.addEventListener("input",()=>{ state.certNo=certEl.value; });
+  document.querySelectorAll("[data-summode]").forEach(b=>b.onclick=()=>{ state.sumMode=b.dataset.summode; render(); });
   if(document.querySelector('[data-export="pdf"]')||document.querySelector('[data-export-range="pdf"]')) ensureJsPDF().catch(()=>{});
   const lo=$("#logout"); if(lo) lo.onclick=async()=>{ await state.client.auth.signOut(); state.email=null; state.role="user"; state.loginPick=null; render(); };
   document.querySelectorAll("[data-toggle]").forEach(btn=>btn.onclick=()=>{const dt=btn.dataset.toggle;state.openDate=state.openDate===dt?null:dt;render();});
