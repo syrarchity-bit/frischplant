@@ -488,6 +488,25 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 [data-theme="dark"] .hk-scene .hk-cloud-drift{display:none}
 @media(max-width:480px){.hk-hero{max-width:260px}}
 @media(max-width:360px){.hk-hero{max-width:230px}}
+/* időszaki összesítő + diagram */
+.period-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px 17px;margin:14px 0 12px}
+.period-card>h4{margin:0 0 12px;font-size:15px}
+.period-quick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer}
+.chip:active{transform:scale(.97)}
+.period-range{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.prl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.prl input{border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:14px}
+.period-range .btn{flex:0 0 auto}
+.chartlegend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.chartlegend i{display:inline-block;vertical-align:middle;margin-right:5px}
+.lg-bar{width:11px;height:11px;border-radius:2px;background:#4a90c2}
+.lg-line{width:15px;height:0;border-top:3px solid #6aa840;border-radius:2px}
+.chartbox{width:100%;color:var(--ink)}
+.sum-card.invoice .rate-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.sum-card.invoice .rate-row input{width:130px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:15px;text-align:right}
+.sumline.big{font-size:17px;font-weight:700;border-top:1px solid var(--line);margin-top:6px;padding-top:10px}
+.sumline.big .v{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -989,7 +1008,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-20-d";
+const APP_VERSION = "2026-06-21-a";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1022,7 +1041,7 @@ async function loadWx(){
     }
   }catch(e){}
 }
-const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, wx:null, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH };
+const state = { mode:"demo", role:"user", adminTab:"days", email:null, client:null, entries:{}, rain:{}, wx:null, openDate:null, theme:"light", pending:null, loginPick:null, _sceneRAF:null, _sceneStart:null, viewY:CONFIG.YEAR, viewM:CONFIG.MONTH, rangeActive:false, rangeFrom:null, rangeTo:null, rangeEntries:{}, rangeRain:{ok:false,byDay:{}}, rate:"" };
 
 /* ---------- dátum ---------- */
 const now=new Date();
@@ -1255,6 +1274,7 @@ function summaryView(){
      <div class="sum-card"><h4>Tevékenység szerinti összóraszám (A–D)</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>
      ${kmCard(a)}
      ${rainCard(a)}
+     ${monthChartCard()}
      <div class="sum-card"><h4>Statisztika</h4><div class="tiles">
        <div class="t"><div class="l">Kitöltött napok</div><div class="v">${a.filledDays} / ${a.dim}</div></div>
        <div class="t"><div class="l">Elmaradt napok</div><div class="v">${a.missedDays}</div></div>
@@ -1265,6 +1285,7 @@ function summaryView(){
        <div class="t"><div class="l">Adminisztráció</div><div class="v">${fmt(a.adminTotal)} ó</div></div>
        <div class="t"><div class="l">Autózott km</div><div class="v">${fmt(a.kmTotal)} km</div></div>
      </div></div>
+     ${rangeBlock(true)}
      <div class="foot">FRISCHPLANT · havi összesítő, csak admin</div>`;
 }
 function clientView(){
@@ -1276,12 +1297,14 @@ function clientView(){
      <div class="sum-card"><h4>Munkatípus-megoszlás</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>
      ${kmCard(a)}
      ${rainCard(a)}
+     ${monthChartCard()}
      <div class="sum-card"><h4>Statisztika</h4><div class="tiles">
        <div class="t"><div class="l">Munkanapok</div><div class="v">${a.filledDays}</div></div>
        <div class="t"><div class="l">Átlag óra / nap</div><div class="v">${fmt(a.filledDays?a.crew/a.filledDays:0)} ó</div></div>
        <div class="t"><div class="l">Autózott km</div><div class="v">${fmt(a.kmTotal)} km</div></div>
        <div class="t"><div class="l">Napi átlag km</div><div class="v">${fmt(avgKm)} km</div></div>
      </div></div>
+     ${rangeBlock(false)}
      <div class="foot">FRISCHPLANT · megrendelői áttekintő</div>`;
 }
 function loginView(){
@@ -1352,6 +1375,203 @@ async function exportPDF(){
   btns.forEach(b=>{b.textContent=b.dataset._lbl;b.disabled=false;});
 }
 
+/* ---------- időszak (tartomány) + diagram ---------- */
+function eachDate(fromIso,toIso,cb){
+  let d=new Date(fromIso+"T00:00:00"), end=new Date(toIso+"T00:00:00"), guard=0;
+  while(d<=end && guard<3660){ cb(iso(d), new Date(d)); d.setDate(d.getDate()+1); guard++; }
+}
+function daysBetween(fromIso,toIso){ let n=0; eachDate(fromIso,toIso,()=>n++); return n; }
+function aggPeriod(map,fromIso,toIso){
+  const actBy={}; ACT.concat(ADMINK).forEach(k=>actBy[k]=0);
+  let workTotal=0,adminTotal=0,hA=0,hB=0,hC=0,hD=0,kmTotal=0,filledDays=0,missedDays=0,dayOffDays=0,dim=0;
+  eachDate(fromIso,toIso,(date)=>{
+    dim++; const e=map[date]||blank();
+    workTotal+=workSum(e); ACT.forEach(k=>actBy[k]+=parseH(e[k]));
+    actBy[ADMINK]+=adminH(e); adminTotal+=adminH(e);
+    hA+=parseH(e.head_a);hB+=parseH(e.head_b);hC+=parseH(e.head_c);hD+=parseH(e.head_d);
+    kmTotal+=kmVal(e);
+    const dD=new Date(date+"T00:00:00");
+    if(hasHours(e)) filledDays++; else if(isDayOff(e)) dayOffDays++; else if(dD<todayD) missedDays++;
+  });
+  return {dim,actBy,workTotal,adminTotal,hA,hB,hC,hD,crew:hA+hB+hC+hD,kmTotal,filledDays,missedDays,dayOffDays};
+}
+async function loadRangeEntries(fromIso,toIso){
+  state.rangeEntries={};
+  if(state.mode!=="live") return;
+  const {data,error}=await state.client.from("entries").select("*").gte("entry_date",fromIso).lte("entry_date",toIso);
+  if(!error && data) data.forEach(r=>{ const e=blank(); ALL.forEach(k=>e[k]=r[k]||""); e.km=r.km||""; e.note=r.note||""; e.dayoff=r.dayoff||""; state.rangeEntries[r.entry_date]=e; });
+}
+async function loadRainRange(fromIso,toIso){
+  const lat=CONFIG.RAIN_LAT, lon=CONFIG.RAIN_LON, tz="Europe%2FBudapest";
+  let endD=new Date(toIso+"T00:00:00"); if(endD>todayD) endD=todayD;
+  const endStr=iso(endD);
+  if(new Date(endStr+"T00:00:00") < new Date(fromIso+"T00:00:00")){ state.rangeRain={byDay:{},total:0,rainy:0,ok:true}; return; }
+  const useArchive = endD < new Date(todayD.getTime()-6*86400000);
+  const base = useArchive ? "https://archive-api.open-meteo.com/v1/archive" : "https://api.open-meteo.com/v1/forecast";
+  const url=`${base}?latitude=${lat}&longitude=${lon}&start_date=${fromIso}&end_date=${endStr}&daily=precipitation_sum&timezone=${tz}`;
+  try{
+    const res=await fetch(url); const j=await res.json();
+    const days=(j.daily&&j.daily.time)||[], vals=(j.daily&&j.daily.precipitation_sum)||[];
+    const byDay={}; let total=0,rainy=0;
+    days.forEach((dt,i)=>{ const v=vals[i]; if(v!=null){ byDay[dt]=v; total+=v; if(v>=1) rainy++; } });
+    state.rangeRain={byDay,total:Math.round(total*10)/10,rainy,ok:true};
+  }catch(err){ state.rangeRain={byDay:{},total:0,rainy:0,ok:false}; }
+}
+function curMonthFrom(){ return `${curY}-${pad(curM)}-01`; }
+function huDate(isoStr){ const d=new Date(isoStr+"T00:00:00"); return `${d.getFullYear()}. ${pad(d.getMonth()+1)}. ${pad(d.getDate())}.`; }
+function formatHUF(n){ n=Math.round(n); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")+" Ft"; }
+
+function rainCardG(a,r,fromIso,toIso){
+  if(!r||!r.ok) return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4><div class="big-sub">A csapadékadat jelenleg nem elérhető.</div></div>`;
+  let list="";
+  eachDate(fromIso,toIso,(date,d)=>{ const v=r.byDay[date]; if(v!=null && v>0) list+=`<div class="dl"><span class="dd">${pad(d.getMonth()+1)}.${pad(d.getDate())}</span><span class="dr">${fmt(v)} mm</span></div>`; });
+  const listHTML = list?`<div class="daylist">${list}</div>`:`<div class="big-sub">Nem volt mérhető csapadék ebben az időszakban.</div>`;
+  return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4>
+    <div class="big-num rain">${fmt(r.total)} mm</div><div class="big-sub">${r.rainy} esős nap (≥ 1 mm) az időszakban</div>
+    ${listHTML}
+    <div class="sum-total">Locsolás összesen ${fmt(a.actBy.r_locsolas)} ó — a csapadékos napokon jellemzően kevesebb az öntözés.</div></div>`;
+}
+
+function rainChartSVG(map,r,fromIso,toIso){
+  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas)}); });
+  if(pts.length===0) return `<div class="big-sub">Nincs adat az időszakra.</div>`;
+  if(pts.length>45) return `<div class="big-sub">Az időszak túl hosszú a napi diagramhoz (max ~45 nap). Szűkítsd a tartományt a grafikonhoz.</div>`;
+  const W=760,H=200,padL=34,padR=34,padB=24,padT=14;
+  const innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
+  const maxMM=Math.max(1,...pts.map(p=>p.mm)), maxLoc=Math.max(1,...pts.map(p=>p.loc));
+  const slot=innerW/n, bw=Math.max(3,Math.min(22,slot*0.6));
+  const yMM=v=>padT+innerH-(v/maxMM)*innerH, yLoc=v=>padT+innerH-(v/maxLoc)*innerH;
+  let bars="",dots="",line="",xlab="";
+  const step=n<=16?1:Math.ceil(n/12);
+  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2;
+    if(p.mm>0){ const y=yMM(p.mm); bars+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(padT+innerH-y).toFixed(1)}" rx="2" fill="#4a90c2" opacity="0.85"/>`; }
+    const ly=yLoc(p.loc); line+=`${i===0?"M":"L"}${cx.toFixed(1)} ${ly.toFixed(1)} `;
+    if(p.loc>0) dots+=`<circle cx="${cx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2.4" fill="#6aa840"/>`;
+    if(i%step===0) xlab+=`<text x="${cx.toFixed(1)}" y="${H-7}" font-size="9" fill="#8aa0b4" text-anchor="middle">${p.n}</text>`;
+  });
+  const grid=[0,0.5,1].map(f=>{ const y=padT+innerH-f*innerH; return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-opacity="0.12"/>`; }).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img">
+    ${grid}${bars}
+    <path d="${line.trim()}" fill="none" stroke="#6aa840" stroke-width="2" stroke-linejoin="round"/>
+    ${dots}
+    <text x="${padL}" y="${padT+4}" font-size="9" fill="#4a90c2" text-anchor="start">${fmt(maxMM)} mm</text>
+    <text x="${W-padR}" y="${padT+4}" font-size="9" fill="#6aa840" text-anchor="end">${fmt(maxLoc)} ó</text>
+    ${xlab}</svg>`;
+}
+function chartCard(map,r,fromIso,toIso){
+  return `<div class="sum-card"><h4>Csapadék és locsolás</h4>
+    <div class="chartlegend"><span><i class="lg-bar"></i> csapadék (mm)</span><span><i class="lg-line"></i> locsolás (ó)</span></div>
+    <div class="chartbox">${rainChartSVG(map,r,fromIso,toIso)}</div>
+    <div class="big-sub">Oszlop: napi csapadék. Vonal: napi locsolási óra.</div></div>`;
+}
+function monthChartCard(){ const y=state.viewY,m=state.viewM,from=`${y}-${pad(m)}-01`,to=isCurMonth()?TODAY:`${y}-${pad(m)}-${pad(daysIn(y,m))}`; return chartCard(state.entries,rainAgg(),from,to); }
+
+/* időszaki összesítő panel */
+function rangeControls(){
+  const f=state.rangeFrom||curMonthFrom(), t=state.rangeTo||TODAY;
+  return `<div class="period-card">
+    <h4>Időszaki összesítő — számlázáshoz</h4>
+    <div class="period-quick">
+      <button class="chip" data-period="month">Ez a hónap</button>
+      <button class="chip" data-period="prev">Előző hónap</button>
+      <button class="chip" data-period="2w">Utolsó 2 hét</button>
+    </div>
+    <div class="period-range">
+      <label class="prl">Kezdő<input type="date" id="rngFrom" value="${f}" max="${TODAY}"></label>
+      <label class="prl">Záró<input type="date" id="rngTo" value="${t}" max="${TODAY}"></label>
+      <button class="btn" data-range-go>Lekérés</button>
+    </div>
+    <div class="note-sm" id="rngMsg"></div>
+  </div>`;
+}
+function invoiceText(crew){ const rate=parseH(state.rate); return rate>0?formatHUF(crew*rate):"— add meg az óradíjat"; }
+function rangeSummary(a,admin){
+  let h=`<div class="section-lbl">${huDate(state.rangeFrom)} – ${huDate(state.rangeTo)} · ${a.dim} nap</div>`;
+  h+=`<div class="exprow"><button class="btn ghost" data-export-range="csv">CSV (időszak)</button><button class="btn ghost" data-export-range="pdf">PDF (időszak)</button></div>`;
+  h+=`<div class="sum-card"><h4>Fejenkénti munkaóra — A–D</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>`;
+  if(admin){
+    h+=`<div class="sum-card invoice"><h4>Számlázás (admin)</h4>
+      <div class="rate-row"><label for="rate">Óradíj (Ft/óra)</label><input id="rate" type="text" inputmode="numeric" autocomplete="off" value="${esc(state.rate||"")}" placeholder="pl. 4500"></div>
+      <div class="sumline"><span class="l">Számlázható munkaóra (A–D)</span><span class="v">${fmt(a.crew)} ó</span></div>
+      <div class="sumline big"><span class="l">Végösszeg</span><span class="v" data-invoice-total>${invoiceText(a.crew)}</span></div>
+      <div class="big-sub">Az óradíj csak ezen az eszközön él, számlatervezethez. A megrendelőnek nem jelenik meg.</div></div>`;
+  }
+  h+=`<div class="sum-card"><h4>Munkatípus-megoszlás</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>`;
+  h+=kmCard(a);
+  h+=rainCardG(a,state.rangeRain,state.rangeFrom,state.rangeTo);
+  h+=chartCard(state.rangeEntries,state.rangeRain,state.rangeFrom,state.rangeTo);
+  h+=`<div class="sum-card"><h4>Statisztika</h4><div class="tiles">
+     <div class="t"><div class="l">Munkanapok</div><div class="v">${a.filledDays} / ${a.dim}</div></div>
+     <div class="t"><div class="l">Elmaradt napok</div><div class="v">${a.missedDays}</div></div>
+     <div class="t"><div class="l">Szabadnap</div><div class="v">${a.dayOffDays}</div></div>
+     <div class="t"><div class="l">Autózott km</div><div class="v">${fmt(a.kmTotal)} km</div></div>
+   </div></div>`;
+  return h;
+}
+function rangeBlock(admin){
+  let h=rangeControls();
+  if(state.rangeActive && state.rangeFrom && state.rangeTo) h+=rangeSummary(aggPeriod(state.rangeEntries,state.rangeFrom,state.rangeTo),admin);
+  return h;
+}
+async function doRangeLoad(fromIso,toIso){
+  state.rangeFrom=fromIso; state.rangeTo=toIso; state.rangeActive=true;
+  await loadRangeEntries(fromIso,toIso); await loadRainRange(fromIso,toIso);
+  render();
+}
+function doRangeGo(){
+  const fe=$("#rngFrom"), te=$("#rngTo"), msg=$("#rngMsg");
+  const f=fe?fe.value:"", t=te?te.value:"";
+  if(!f||!t){ if(msg) msg.textContent="Adj meg kezdő és záró dátumot."; return; }
+  if(f>t){ if(msg) msg.textContent="A kezdő dátum nem lehet későbbi a zárónál."; return; }
+  doRangeLoad(f,t);
+}
+function doRangeQuick(kind){
+  let from,to=TODAY;
+  if(kind==="month"){ from=curMonthFrom(); }
+  else if(kind==="prev"){ const py=curM===1?curY-1:curY, pm=curM===1?12:curM-1; from=`${py}-${pad(pm)}-01`; to=`${py}-${pad(pm)}-${pad(daysIn(py,pm))}`; }
+  else { const d=new Date(todayD); d.setDate(d.getDate()-13); from=iso(d); }
+  doRangeLoad(from,to);
+}
+
+/* általános CSV/PDF (havi és időszaki közös) */
+function csvFor(map,rainObj,fromIso,toIso,stem){
+  const a=aggPeriod(map,fromIso,toIso);
+  const head=["Dátum","A","B","C","D","Fejenkénti összes","locsolás","tányérozás","takarítás","karózás","felmérés","QTA","kertészeti","adminisztráció","Autózott km","Csapadék mm","Megjegyzés"];
+  const lines=[head.join(";")];
+  eachDate(fromIso,toIso,(date)=>{ const e=map[date]||blank(), rain=(rainObj&&rainObj.ok&&rainObj.byDay[date]!=null)?rainObj.byDay[date]:null;
+    lines.push([date,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):""),(e.note||"").replace(/[;\n\r]/g," ")].join(";")); });
+  lines.push(["ÖSSZESEN","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):""),""].join(";"));
+  const csv="\uFEFF"+lines.join("\r\n"), blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob), link=document.createElement("a");
+  link.href=url; link.download=stem+".csv"; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+}
+async function pdfFor(map,rainObj,fromIso,toIso,titleLabel,stem){
+  const { jsPDF }=window.jspdf;
+  const a=aggPeriod(map,fromIso,toIso);
+  const doc=new jsPDF({orientation:"landscape",unit:"pt",format:"a4"});
+  doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(31,80,55);
+  doc.text(`FRISCHPLANT  —  ${titleLabel}`,40,40);
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(90);
+  doc.text(`Ossz ora: ${fmt(a.crew)}   A: ${fmt(a.hA)}  B: ${fmt(a.hB)}  C: ${fmt(a.hC)}  D: ${fmt(a.hD)}   Ossz km: ${fmt(a.kmTotal)}   Csapadek: ${rainObj&&rainObj.ok?fmt(rainObj.total)+" mm":"-"}   Munkanap: ${a.filledDays}`,40,57);
+  doc.setTextColor(20);
+  const head=[["Nap","A","B","C","D","Fej.ossz","locs.","tany.","takar.","karo","felm.","QTA","kert.","admin","km","mm"]];
+  const body=[];
+  eachDate(fromIso,toIso,(date,d)=>{ const e=map[date]||blank(), rain=(rainObj&&rainObj.ok&&rainObj.byDay[date]!=null)?rainObj.byDay[date]:null;
+    body.push([`${pad(d.getMonth()+1)}.${pad(d.getDate())}`,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):"")]); });
+  const foot=[["Ossz.","","","","",fmt(a.crew),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):"")]];
+  doc.autoTable({head,body,foot,startY:68,theme:"grid",showFoot:"lastPage",styles:{fontSize:7.5,cellPadding:2.5,halign:"center"},headStyles:{fillColor:[47,125,79],halign:"center"},footStyles:{fillColor:[230,240,233],textColor:20,fontStyle:"bold"},columnStyles:{0:{cellWidth:34}}});
+  const blob=doc.output("blob"), url=URL.createObjectURL(blob), link=document.createElement("a");
+  link.href=url; link.download=stem+".pdf"; document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+async function pdfRun(btns,build){
+  btns.forEach(b=>{ if(!b.dataset._lbl) b.dataset._lbl=b.textContent; b.textContent="PDF készül…"; b.disabled=true; });
+  try{ await ensureJsPDF(); await build(); }
+  catch(e){ alert("A PDF-hez internetkapcsolat kell (a könyvtár nem töltődött be). Próbáld újra online."); }
+  btns.forEach(b=>{ b.textContent=b.dataset._lbl; b.disabled=false; });
+}
+function rangeCSV(){ csvFor(state.rangeEntries,state.rangeRain,state.rangeFrom,state.rangeTo,`frischplant-${state.rangeFrom}_${state.rangeTo}`); }
+async function rangePDF(){ await pdfRun(document.querySelectorAll('[data-export-range="pdf"]'), ()=>pdfFor(state.rangeEntries,state.rangeRain,state.rangeFrom,state.rangeTo,`${huDate(state.rangeFrom)} - ${huDate(state.rangeTo)}`,`frischplant-${state.rangeFrom}_${state.rangeTo}`)); }
+
 /* ---------- render + események ---------- */
 function startScene(){
   if(state._sceneRAF) cancelAnimationFrame(state._sceneRAF);
@@ -1413,7 +1633,11 @@ function bindMain(){
   document.querySelectorAll(".adminnav button[data-tab]").forEach(b=>b.onclick=()=>{state.adminTab=b.dataset.tab;state.openDate=null;render();});
   document.querySelectorAll("[data-mnav]").forEach(b=>b.onclick=()=>{ let m=state.viewM+parseInt(b.dataset.mnav,10),y=state.viewY; if(m<1){m=12;y--;} if(m>12){m=1;y++;} if(y>curY||(y===curY&&m>curM)) return; state.viewY=y;state.viewM=m;state.openDate=null;refresh(); });
   document.querySelectorAll("[data-export]").forEach(b=>b.onclick=()=>{ b.dataset.export==="csv"?exportCSV():exportPDF(); });
-  if(document.querySelector('[data-export="pdf"]')) ensureJsPDF().catch(()=>{});
+  document.querySelectorAll("[data-period]").forEach(b=>b.onclick=()=>doRangeQuick(b.dataset.period));
+  document.querySelectorAll("[data-range-go]").forEach(b=>b.onclick=()=>doRangeGo());
+  document.querySelectorAll("[data-export-range]").forEach(b=>b.onclick=()=>{ b.dataset.exportRange==="csv"?rangeCSV():rangePDF(); });
+  const rateEl=$("#rate"); if(rateEl) rateEl.addEventListener("input",()=>{ state.rate=rateEl.value; const ra=aggPeriod(state.rangeEntries,state.rangeFrom,state.rangeTo); document.querySelectorAll("[data-invoice-total]").forEach(el=>el.textContent=invoiceText(ra.crew)); });
+  if(document.querySelector('[data-export="pdf"]')||document.querySelector('[data-export-range="pdf"]')) ensureJsPDF().catch(()=>{});
   const lo=$("#logout"); if(lo) lo.onclick=async()=>{ await state.client.auth.signOut(); state.email=null; state.role="user"; state.loginPick=null; render(); };
   document.querySelectorAll("[data-toggle]").forEach(btn=>btn.onclick=()=>{const dt=btn.dataset.toggle;state.openDate=state.openDate===dt?null:dt;render();});
   document.querySelectorAll("input[data-field],textarea[data-field]").forEach(el=>el.addEventListener("input",()=>{
