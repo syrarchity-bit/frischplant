@@ -500,8 +500,8 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .period-range .btn{flex:0 0 auto}
 .chartlegend{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-bottom:6px}
 .chartlegend i{display:inline-block;vertical-align:middle;margin-right:5px}
-.lg-bar{width:11px;height:11px;border-radius:2px;background:#4a90c2}
-.lg-line{width:15px;height:0;border-top:3px solid #6aa840;border-radius:2px}
+.lg-rain{width:11px;height:11px;border-radius:2px;background:#6aa840}
+.lg-water{width:11px;height:11px;border-radius:2px;background:#4a90c2}
 .chartbox{width:100%;color:var(--ink)}
 .sum-card.invoice .rate-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .sum-card.invoice .rate-row input{width:130px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:15px;text-align:right}
@@ -1008,7 +1008,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-21-b";
+const APP_VERSION = "2026-06-21-c";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1396,60 +1396,69 @@ function rainCardG(a,r,fromIso,toIso){
     <div class="sum-total">Locsolás összesen ${fmt(a.actBy.r_locsolas)} ó — a csapadékos napokon jellemzően kevesebb az öntözés.</div></div>`;
 }
 
+function niceMax(v){ if(!isFinite(v)||v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))), nn=v/p; let m; if(nn<=1)m=1; else if(nn<=2)m=2; else if(nn<=2.5)m=2.5; else if(nn<=5)m=5; else m=10; return m*p; }
 function rainChartSVG(map,r,fromIso,toIso){
   const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas)}); });
   if(pts.length===0) return `<div class="big-sub">Nincs adat az időszakra.</div>`;
   if(pts.length>45) return `<div class="big-sub">Az időszak túl hosszú a napi diagramhoz (max ~45 nap). Szűkítsd a tartományt a grafikonhoz.</div>`;
-  const W=760,H=200,padL=34,padR=34,padB=24,padT=14;
-  const innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
-  const maxMM=Math.max(1,...pts.map(p=>p.mm)), maxLoc=Math.max(1,...pts.map(p=>p.loc));
-  const slot=innerW/n, bw=Math.max(3,Math.min(22,slot*0.6));
-  const yMM=v=>padT+innerH-(v/maxMM)*innerH, yLoc=v=>padT+innerH-(v/maxLoc)*innerH;
-  let bars="",dots="",line="",xlab="";
+  const W=760,H=210,padL=42,padR=42,padT=18,padB=22, innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
+  const RAIN="#6aa840", WATER="#4a90c2", base=padT+innerH;
+  const maxMM=niceMax(Math.max.apply(null,pts.map(p=>p.mm))), maxLoc=niceMax(Math.max.apply(null,pts.map(p=>p.loc)));
+  const slot=innerW/n, bw=Math.max(2.5,Math.min(13,slot*0.34)), gap=bw*0.25;
+  const yMM=v=>base-(v/maxMM)*innerH, yLoc=v=>base-(v/maxLoc)*innerH;
+  let grid="",bars="",xlab="";
+  for(let k=0;k<=4;k++){ const f=k/4, y=base-f*innerH;
+    grid+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-opacity="0.10"/>`;
+    grid+=`<text x="${padL-5}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${RAIN}" text-anchor="end">${fmt(maxMM*f)}</text>`;
+    grid+=`<text x="${W-padR+5}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">${fmt(maxLoc*f)}</text>`;
+  }
   const step=n<=16?1:Math.ceil(n/12);
-  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2;
-    if(p.mm>0){ const y=yMM(p.mm); bars+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(padT+innerH-y).toFixed(1)}" rx="2" fill="#4a90c2" opacity="0.85"/>`; }
-    const ly=yLoc(p.loc); line+=`${i===0?"M":"L"}${cx.toFixed(1)} ${ly.toFixed(1)} `;
-    if(p.loc>0) dots+=`<circle cx="${cx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2.4" fill="#6aa840"/>`;
+  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, gx=cx-bw-gap/2, kx=cx+gap/2;
+    if(p.mm>0){ const y=yMM(p.mm); bars+=`<rect x="${gx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.5" fill="${RAIN}"/>`; }
+    if(p.loc>0){ const y=yLoc(p.loc); bars+=`<rect x="${kx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.5" fill="${WATER}"/>`; }
     if(i%step===0) xlab+=`<text x="${cx.toFixed(1)}" y="${H-7}" font-size="9" fill="#8aa0b4" text-anchor="middle">${p.n}</text>`;
   });
-  const grid=[0,0.5,1].map(f=>{ const y=padT+innerH-f*innerH; return `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-opacity="0.12"/>`; }).join("");
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img">
     ${grid}${bars}
-    <path d="${line.trim()}" fill="none" stroke="#6aa840" stroke-width="2" stroke-linejoin="round"/>
-    ${dots}
-    <text x="${padL}" y="${padT+4}" font-size="9" fill="#4a90c2" text-anchor="start">${fmt(maxMM)} mm</text>
-    <text x="${W-padR}" y="${padT+4}" font-size="9" fill="#6aa840" text-anchor="end">${fmt(maxLoc)} ó</text>
+    <text x="${padL-5}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${RAIN}" text-anchor="end">mm</text>
+    <text x="${W-padR+5}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">óra</text>
     ${xlab}</svg>`;
 }
 function chartCard(map,r,fromIso,toIso){
   return `<div class="sum-card"><h4>Csapadék és locsolás</h4>
-    <div class="chartlegend"><span><i class="lg-bar"></i> csapadék (mm)</span><span><i class="lg-line"></i> locsolás (ó)</span></div>
+    <div class="chartlegend"><span><i class="lg-rain"></i> csapadék (mm)</span><span><i class="lg-water"></i> locsolás (ó)</span></div>
     <div class="chartbox">${rainChartSVG(map,r,fromIso,toIso)}</div>
-    <div class="big-sub">Oszlop: napi csapadék. Vonal: napi locsolási óra.</div></div>`;
+    <div class="big-sub">Zöld oszlop: napi csapadék (mm). Kék oszlop: napi locsolás (óra).</div></div>`;
 }
 function monthChartCard(){ const y=state.viewY,m=state.viewM,from=`${y}-${pad(m)}-01`,to=isCurMonth()?TODAY:`${y}-${pad(m)}-${pad(daysIn(y,m))}`; return chartCard(state.entries,rainAgg(),from,to); }
 function chartToPNG(map,r,fromIso,toIso){
   const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas)}); });
   if(pts.length===0||pts.length>45) return null;
-  const sc=2,W=1000,H=300,padL=46,padR=46,padT=22, innerW=W-padL-padR, innerH=H-padT-30, n=pts.length;
+  const sc=2,W=1000,H=300,padL=54,padR=54,padT=24,padB=30, innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
   const c=document.createElement("canvas"); c.width=W*sc; c.height=H*sc; const x=c.getContext("2d"); x.scale(sc,sc);
   x.fillStyle="#ffffff"; x.fillRect(0,0,W,H);
-  const maxMM=Math.max(1,...pts.map(p=>p.mm)), maxLoc=Math.max(1,...pts.map(p=>p.loc));
-  const slot=innerW/n, bw=Math.max(4,Math.min(34,slot*0.6));
-  const yMM=v=>padT+innerH-(v/maxMM)*innerH, yLoc=v=>padT+innerH-(v/maxLoc)*innerH;
-  x.strokeStyle="#e2e2e2"; x.lineWidth=1; [0,0.5,1].forEach(f=>{ const yy=padT+innerH-f*innerH; x.beginPath(); x.moveTo(padL,yy); x.lineTo(W-padR,yy); x.stroke(); });
-  x.fillStyle="#4a90c2"; pts.forEach((p,i)=>{ if(p.mm>0){ const cx=padL+slot*i+slot/2, yy=yMM(p.mm); x.fillRect(cx-bw/2,yy,bw,padT+innerH-yy); } });
-  x.strokeStyle="#6aa840"; x.lineWidth=2.5; x.beginPath(); pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, yy=yLoc(p.loc); i===0?x.moveTo(cx,yy):x.lineTo(cx,yy); }); x.stroke();
-  x.fillStyle="#6aa840"; pts.forEach((p,i)=>{ if(p.loc>0){ const cx=padL+slot*i+slot/2, yy=yLoc(p.loc); x.beginPath(); x.arc(cx,yy,3.2,0,Math.PI*2); x.fill(); } });
-  x.font="13px sans-serif"; x.textAlign="left"; x.fillStyle="#4a90c2"; x.fillText(fmt(maxMM)+" mm",padL,padT-7);
-  x.textAlign="right"; x.fillStyle="#6aa840"; x.fillText(fmt(maxLoc)+" ó",W-padR,padT-7);
+  const RAIN="#6aa840", WATER="#4a90c2", base=padT+innerH;
+  const maxMM=niceMax(Math.max.apply(null,pts.map(p=>p.mm))), maxLoc=niceMax(Math.max.apply(null,pts.map(p=>p.loc)));
+  const slot=innerW/n, bw=Math.max(3,Math.min(26,slot*0.34)), gap=bw*0.25;
+  const yMM=v=>base-(v/maxMM)*innerH, yLoc=v=>base-(v/maxLoc)*innerH;
+  x.font="13px sans-serif"; x.textBaseline="middle";
+  for(let k=0;k<=4;k++){ const f=k/4, y=base-f*innerH;
+    x.strokeStyle="#e6e6e6"; x.lineWidth=1; x.beginPath(); x.moveTo(padL,y); x.lineTo(W-padR,y); x.stroke();
+    x.fillStyle=RAIN; x.textAlign="right"; x.fillText(fmt(maxMM*f),padL-6,y);
+    x.fillStyle=WATER; x.textAlign="left"; x.fillText(fmt(maxLoc*f),W-padR+6,y);
+  }
+  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, gx=cx-bw-gap/2, kx=cx+gap/2;
+    if(p.mm>0){ const y=yMM(p.mm); x.fillStyle=RAIN; x.fillRect(gx,y,bw,base-y); }
+    if(p.loc>0){ const y=yLoc(p.loc); x.fillStyle=WATER; x.fillRect(kx,y,bw,base-y); }
+  });
+  x.textBaseline="alphabetic"; x.font="13px sans-serif";
+  x.fillStyle=RAIN; x.textAlign="right"; x.fillText("mm",padL-6,padT-8);
+  x.fillStyle=WATER; x.textAlign="left"; x.fillText("óra",W-padR+6,padT-8);
   x.fillStyle="#888888"; x.font="12px sans-serif"; x.textAlign="center"; const stp=n<=20?1:Math.ceil(n/16);
   pts.forEach((p,i)=>{ if(i%stp===0){ const cx=padL+slot*i+slot/2; x.fillText(String(p.n),cx,H-10); } });
   return c.toDataURL("image/png");
 }
 
-/* időszaki összesítő panel */
 function rangeControls(){
   const f=state.rangeFrom||curMonthFrom(), t=state.rangeTo||TODAY;
   return `<div class="period-card">
@@ -1554,7 +1563,7 @@ async function pdfFor(map,rainObj,fromIso,toIso,titleLabel,stem){
       doc.text("Csapadék és locsolás",40,_y); _y+=8;
       doc.addImage(_png,"PNG",40,_y,_cw,_ch);
       doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(120);
-      doc.text("Oszlop: napi csapadék (mm). Vonal: napi locsolási óra.",40,_y+_ch+12);
+      doc.text("Zöld oszlop: csapadék (mm). Kék oszlop: locsolás (óra).",40,_y+_ch+12);
       doc.setTextColor(20);
     }
   }catch(_e){}
