@@ -166,8 +166,8 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .big-num{font-family:"Fraunces",serif;font-weight:700;font-size:42px;line-height:1;color:var(--accent-d)}
 .big-num.rain{color:var(--rain)}
 .big-sub{font-size:13px;color:var(--muted);margin-top:5px}
-.quad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-@media(max-width:460px){.quad{grid-template-columns:repeat(2,1fr)}}
+.quad{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+@media(max-width:460px){.quad{grid-template-columns:repeat(3,1fr)}}
 .quad .q{background:var(--field);border:1px solid var(--line-2);border-radius:11px;padding:11px;text-align:center}
 .quad .q .l{font-size:12px;color:var(--muted);font-weight:600}
 .quad .q .v{font-family:"Fraunces",serif;font-size:22px;font-weight:600;margin-top:3px}
@@ -1008,7 +1008,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-21-c";
+const APP_VERSION = "2026-06-21-d";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1196,7 +1196,7 @@ function monthAgg(){
   }
   return {y,m,dim,actBy,workTotal,adminTotal,hA,hB,hC,hD,crew:hA+hB+hC+hD,kmTotal,filledDays,missedDays,dayOffDays};
 }
-function headQuad(a){ return [["A",a.hA],["B",a.hB],["C",a.hC],["D",a.hD]].map(([l,v])=>`<div class="q"><div class="l">${l}</div><div class="v">${fmt(v)}</div></div>`).join(""); }
+function headQuad(a){ return [["A",a.hA],["B",a.hB],["C",a.hC],["D",a.hD],["F",a.adminTotal]].map(([l,v])=>`<div class="q"><div class="l">${l}</div><div class="v">${fmt(v)}</div></div>`).join(""); }
 function worktypeBars(a){
   const acts=ACT.map(k=>({label:LABEL[k],h:a.actBy[k]}));
   const denom=a.workTotal, maxAct=Math.max(0,...acts.map(x=>x.h));
@@ -1270,7 +1270,7 @@ function summaryView(){
   const topAct=ACT.map(k=>({label:LABEL[k],h:a.actBy[k]})).reduce((p,c)=>c.h>p.h?c:p,{h:0,label:'—'});
   const avg=a.filledDays?a.crew/a.filledDays:0;
   return headerHTML()+demoBar()+adminNav('summary')+monthNav()+exportRow()+
-    `<div class="sum-card"><h4>Fejenkénti munkaóra (havi) — A–D</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>
+    `<div class="sum-card"><h4>Fejenkénti munkaóra (havi) — A–F</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–F összesen ${fmt(a.crew+a.adminTotal)} óra</div></div>
      <div class="sum-card"><h4>Tevékenység szerinti összóraszám (A–D)</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>
      ${kmCard(a)}
      ${rainCard(a)}
@@ -1293,7 +1293,7 @@ function clientView(){
   const avgKm=a.filledDays?a.kmTotal/a.filledDays:0;
   return headerHTML()+demoBar()+monthNav()+exportRow()+
     `<div class="sum-card"><h4>Összes ledolgozott óra</h4><div class="big-num">${fmt(a.workTotal)} ó</div><div class="big-sub">${a.filledDays} munkanap ebben a hónapban</div></div>
-     <div class="sum-card"><h4>Fejenkénti munkaóra — A–D</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>
+     <div class="sum-card"><h4>Fejenkénti munkaóra — A–F</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–F összesen ${fmt(a.crew+a.adminTotal)} óra</div></div>
      <div class="sum-card"><h4>Munkatípus-megoszlás</h4>${worktypeBars(a)}<div class="sum-total">összesen ${fmt(a.workTotal)} óra</div></div>
      ${kmCard(a)}
      ${rainCard(a)}
@@ -1480,7 +1480,7 @@ function invoiceText(crew){ const rate=parseH(state.rate); return rate>0?formatH
 function rangeSummary(a,admin){
   let h=`<div class="section-lbl">${huDate(state.rangeFrom)} – ${huDate(state.rangeTo)} · ${a.dim} nap</div>`;
   h+=`<div class="exprow"><button class="btn ghost" data-export-range="csv">CSV (időszak)</button><button class="btn ghost" data-export-range="pdf">PDF (időszak)</button></div>`;
-  h+=`<div class="sum-card"><h4>Fejenkénti munkaóra — A–D</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–D összesen ${fmt(a.crew)} óra</div></div>`;
+  h+=`<div class="sum-card"><h4>Fejenkénti munkaóra — A–F</h4><div class="quad">${headQuad(a)}</div><div class="sum-total">A–F összesen ${fmt(a.crew+a.adminTotal)} óra</div></div>`;
   if(admin){
     h+=`<div class="sum-card invoice"><h4>Számlázás (admin)</h4>
       <div class="rate-row"><label for="rate">Óradíj (Ft/óra)</label><input id="rate" type="text" inputmode="numeric" autocomplete="off" value="${esc(state.rate||"")}" placeholder="pl. 4500"></div>
