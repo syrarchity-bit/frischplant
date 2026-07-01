@@ -502,7 +502,7 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .chartlegend i{display:inline-block;vertical-align:middle;margin-right:5px}
 .lg-rain{width:11px;height:11px;border-radius:2px;background:#6aa840}
 .lg-water{width:11px;height:11px;border-radius:2px;background:#4a90c2}
-.lg-sun{width:13px;height:3px;border-radius:2px;background:#e0a422}
+.lg-temp{width:11px;height:11px;border-radius:2px;background:#e0a422}
 .chartbox{width:100%;color:var(--ink)}
 .sum-card.invoice .rate-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .sum-card.invoice .rate-row input{width:130px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:15px;text-align:right}
@@ -1471,71 +1471,78 @@ function rainCardG(a,r,fromIso,toIso){
 
 function niceMax(v){ if(!isFinite(v)||v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))), nn=v/p; let m; if(nn<=1)m=1; else if(nn<=2)m=2; else if(nn<=2.5)m=2.5; else if(nn<=5)m=5; else m=10; return m*p; }
 function rainChartSVG(map,r,fromIso,toIso){
-  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas),sun:(r&&r.ok&&r.sunByDay&&r.sunByDay[date]!=null)?r.sunByDay[date]:null}); });
+  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas),tp:(r&&r.ok&&r.tempByDay&&r.tempByDay[date]!=null)?r.tempByDay[date]:null}); });
   if(pts.length===0) return `<div class="big-sub">Nincs adat az időszakra.</div>`;
   if(pts.length>45) return `<div class="big-sub">Az időszak túl hosszú a napi diagramhoz (max ~45 nap). Szűkítsd a tartományt a grafikonhoz.</div>`;
-  const W=760,H=210,padL=42,padR=42,padT=18,padB=22, innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
-  const RAIN="#6aa840", WATER="#4a90c2", SUN="#e0a422", base=padT+innerH;
+  const W=800,H=214,padL=40,padR=92,padT=18,padB=22, innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
+  const RAIN="#6aa840", WATER="#4a90c2", TEMP="#e0a422", base=padT+innerH;
   const maxMM=niceMax(Math.max.apply(null,pts.map(p=>p.mm)));
-  const maxRight=niceMax(Math.max(Math.max.apply(null,pts.map(p=>p.loc)), Math.max.apply(null,pts.map(p=>p.sun||0))));
-  const slot=innerW/n, bw=Math.max(2.5,Math.min(13,slot*0.34)), gap=bw*0.25;
-  const yMM=v=>base-(v/maxMM)*innerH, yR=v=>base-(v/maxRight)*innerH;
+  const maxLoc=niceMax(Math.max.apply(null,pts.map(p=>p.loc)));
+  const maxT=niceMax(Math.max.apply(null,pts.map(p=>p.tp||0)));
+  const slot=innerW/n, bw=Math.max(2.2,Math.min(10,slot*0.2)), gap=bw*0.32, grpW=3*bw+2*gap;
+  const yMM=v=>base-(v/maxMM)*innerH, yLoc=v=>base-(v/maxLoc)*innerH, yT=v=>base-(v/maxT)*innerH;
+  const axR1=(W-padR)+6, axR2=(W-padR)+42;
   let grid="",bars="",xlab="";
   for(let k=0;k<=4;k++){ const f=k/4, y=base-f*innerH;
     grid+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-opacity="0.10"/>`;
     grid+=`<text x="${padL-5}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${RAIN}" text-anchor="end">${fmt(maxMM*f)}</text>`;
-    grid+=`<text x="${W-padR+5}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">${fmt(maxRight*f)}</text>`;
+    grid+=`<text x="${axR1}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">${fmt(maxLoc*f)}</text>`;
+    grid+=`<text x="${axR2}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${TEMP}" text-anchor="start">${fmt(maxT*f)}</text>`;
   }
   const step=n<=16?1:Math.ceil(n/12);
-  let sunPath="",sunDots="";
-  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, gx=cx-bw-gap/2, kx=cx+gap/2;
-    if(p.mm>0){ const y=yMM(p.mm); bars+=`<rect x="${gx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.5" fill="${RAIN}"/>`; }
-    if(p.loc>0){ const y=yR(p.loc); bars+=`<rect x="${kx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.5" fill="${WATER}"/>`; }
-    if(p.sun!=null){ const sy=yR(p.sun); sunPath+=(sunPath?" L":"M")+cx.toFixed(1)+" "+sy.toFixed(1); sunDots+=`<circle cx="${cx.toFixed(1)}" cy="${sy.toFixed(1)}" r="2.1" fill="${SUN}"/>`; }
+  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, x0=cx-grpW/2;
+    if(p.mm>0){ const y=yMM(p.mm); bars+=`<rect x="${x0.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.2" fill="${RAIN}"/>`; }
+    if(p.loc>0){ const y=yLoc(p.loc); bars+=`<rect x="${(x0+bw+gap).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.2" fill="${WATER}"/>`; }
+    if(p.tp!=null){ const y=yT(p.tp); bars+=`<rect x="${(x0+2*(bw+gap)).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.2" fill="${TEMP}"/>`; }
     if(i%step===0) xlab+=`<text x="${cx.toFixed(1)}" y="${H-7}" font-size="9" fill="#8aa0b4" text-anchor="middle">${p.n}</text>`;
   });
-  const sunLine = sunPath?`<path d="${sunPath}" fill="none" stroke="${SUN}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${sunDots}`:"";
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img">
-    ${grid}${bars}${sunLine}
+    ${grid}${bars}
     <text x="${padL-5}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${RAIN}" text-anchor="end">mm</text>
-    <text x="${W-padR+5}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">óra</text>
+    <text x="${axR1}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">óra</text>
+    <text x="${axR2}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${TEMP}" text-anchor="start">°C</text>
     ${xlab}</svg>`;
 }
 function chartCard(map,r,fromIso,toIso){
-  return `<div class="sum-card"><h4>Csapadék, locsolás és napsütés</h4>
-    <div class="chartlegend"><span><i class="lg-rain"></i> csapadék (mm)</span><span><i class="lg-water"></i> locsolás (ó)</span><span><i class="lg-sun"></i> napsütés (ó)</span></div>
+  return `<div class="sum-card"><h4>Csapadék, locsolás és hőmérséklet</h4>
+    <div class="chartlegend"><span><i class="lg-rain"></i> csapadék (mm)</span><span><i class="lg-water"></i> locsolás (ó)</span><span><i class="lg-temp"></i> hőmérséklet (°C)</span></div>
     <div class="chartbox">${rainChartSVG(map,r,fromIso,toIso)}</div>
-    <div class="big-sub">Zöld oszlop: napi csapadék (mm). Kék oszlop: napi locsolás (óra). Narancs vonal: napi napsütés (óra).</div></div>`;
+    <div class="big-sub">Zöld oszlop: napi csapadék (mm). Kék oszlop: napi locsolás (óra). Narancs oszlop: napi átlaghőmérséklet (°C).</div></div>`;
 }
 function monthChartCard(){ const y=state.viewY,m=state.viewM,from=`${y}-${pad(m)}-01`,to=isCurMonth()?TODAY:`${y}-${pad(m)}-${pad(daysIn(y,m))}`; return chartCard(state.entries,rainAgg(),from,to); }
 function chartToPNG(map,r,fromIso,toIso){
-  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas)}); });
+  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas),tp:(r&&r.ok&&r.tempByDay&&r.tempByDay[date]!=null)?r.tempByDay[date]:null}); });
   if(pts.length===0||pts.length>45) return null;
-  const sc=2,W=1000,H=300,padL=54,padR=54,padT=24,padB=30, innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
+  const sc=2,W=1040,H=300,padL=54,padR=104,padT=24,padB=30, innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
   const c=document.createElement("canvas"); c.width=W*sc; c.height=H*sc; const x=c.getContext("2d"); x.scale(sc,sc);
   x.fillStyle="#ffffff"; x.fillRect(0,0,W,H);
-  const RAIN="#6aa840", WATER="#4a90c2", base=padT+innerH;
-  const maxMM=niceMax(Math.max.apply(null,pts.map(p=>p.mm))), maxLoc=niceMax(Math.max.apply(null,pts.map(p=>p.loc)));
-  const slot=innerW/n, bw=Math.max(3,Math.min(26,slot*0.34)), gap=bw*0.25;
-  const yMM=v=>base-(v/maxMM)*innerH, yLoc=v=>base-(v/maxLoc)*innerH;
+  const RAIN="#6aa840", WATER="#4a90c2", TEMP="#e0a422", base=padT+innerH;
+  const maxMM=niceMax(Math.max.apply(null,pts.map(p=>p.mm)));
+  const maxLoc=niceMax(Math.max.apply(null,pts.map(p=>p.loc)));
+  const maxT=niceMax(Math.max.apply(null,pts.map(p=>p.tp||0)));
+  const slot=innerW/n, bw=Math.max(3,Math.min(20,slot*0.2)), gap=bw*0.32, grpW=3*bw+2*gap;
+  const yMM=v=>base-(v/maxMM)*innerH, yLoc=v=>base-(v/maxLoc)*innerH, yT=v=>base-(v/maxT)*innerH;
+  const axR1=(W-padR)+6, axR2=(W-padR)+46;
   x.font="13px sans-serif"; x.textBaseline="middle";
   for(let k=0;k<=4;k++){ const f=k/4, y=base-f*innerH;
     x.strokeStyle="#e6e6e6"; x.lineWidth=1; x.beginPath(); x.moveTo(padL,y); x.lineTo(W-padR,y); x.stroke();
     x.fillStyle=RAIN; x.textAlign="right"; x.fillText(fmt(maxMM*f),padL-6,y);
-    x.fillStyle=WATER; x.textAlign="left"; x.fillText(fmt(maxLoc*f),W-padR+6,y);
+    x.fillStyle=WATER; x.textAlign="left"; x.fillText(fmt(maxLoc*f),axR1,y);
+    x.fillStyle=TEMP; x.textAlign="left"; x.fillText(fmt(maxT*f),axR2,y);
   }
-  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, gx=cx-bw-gap/2, kx=cx+gap/2;
-    if(p.mm>0){ const y=yMM(p.mm); x.fillStyle=RAIN; x.fillRect(gx,y,bw,base-y); }
-    if(p.loc>0){ const y=yLoc(p.loc); x.fillStyle=WATER; x.fillRect(kx,y,bw,base-y); }
+  pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, x0=cx-grpW/2;
+    if(p.mm>0){ const y=yMM(p.mm); x.fillStyle=RAIN; x.fillRect(x0,y,bw,base-y); }
+    if(p.loc>0){ const y=yLoc(p.loc); x.fillStyle=WATER; x.fillRect(x0+bw+gap,y,bw,base-y); }
+    if(p.tp!=null){ const y=yT(p.tp); x.fillStyle=TEMP; x.fillRect(x0+2*(bw+gap),y,bw,base-y); }
   });
   x.textBaseline="alphabetic"; x.font="13px sans-serif";
   x.fillStyle=RAIN; x.textAlign="right"; x.fillText("mm",padL-6,padT-8);
-  x.fillStyle=WATER; x.textAlign="left"; x.fillText("óra",W-padR+6,padT-8);
+  x.fillStyle=WATER; x.textAlign="left"; x.fillText("óra",axR1,padT-8);
+  x.fillStyle=TEMP; x.textAlign="left"; x.fillText("°C",axR2,padT-8);
   x.fillStyle="#888888"; x.font="12px sans-serif"; x.textAlign="center"; const stp=n<=20?1:Math.ceil(n/16);
   pts.forEach((p,i)=>{ if(i%stp===0){ const cx=padL+slot*i+slot/2; x.fillText(String(p.n),cx,H-10); } });
   return c.toDataURL("image/png");
 }
-
 function rangeControls(){
   const f=state.rangeFrom||curMonthFrom(), t=state.rangeTo||TODAY;
   return `<div class="period-card">
@@ -1606,54 +1613,58 @@ function doRangeQuick(kind){
 /* általános CSV/PDF (havi és időszaki közös) */
 function csvFor(map,rainObj,fromIso,toIso,stem){
   const a=aggPeriod(map,fromIso,toIso);
-  const head=["Dátum","A","B","C","D","F","Munkaóra összes","locsolás","tányérozás","takarítás","karózás","felmérés","QTA","kertészeti","adminisztráció","Autózott km","Csapadék mm","Megjegyzés"];
+  const head=["Dátum","A","B","C","D","Munkaóra összes","locsolás","tányérozás","takarítás","karózás","felmérés","QTA","kertészeti","adminisztráció","Autózott km","Csapadék mm","Megjegyzés"];
   const lines=[head.join(";")];
   eachDate(fromIso,toIso,(date)=>{ const e=map[date]||blank(), rain=(rainObj&&rainObj.ok&&rainObj.byDay[date]!=null)?rainObj.byDay[date]:null;
-    lines.push([date,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",e.r_admin||"",fmt(headSum(e)+adminH(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):""),(e.note||"").replace(/[;\n\r]/g," ")].join(";")); });
-  lines.push(["ÖSSZESEN","","","","","",fmt(a.crew+a.adminTotal),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):""),""].join(";"));
+    lines.push([date,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",fmt(headSum(e)+adminH(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):""),(e.note||"").replace(/[;\n\r]/g," ")].join(";")); });
+  lines.push(["ÖSSZESEN","","","","",fmt(a.crew+a.adminTotal),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):""),""].join(";"));
   const csv="\uFEFF"+lines.join("\r\n"), blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob), link=document.createElement("a");
   link.href=url; link.download=stem+".csv"; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
 }
+const CARLITO_R="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";
 async function pdfFor(map,rainObj,fromIso,toIso,titleLabel,stem){
   const { jsPDF }=window.jspdf;
   const a=aggPeriod(map,fromIso,toIso);
   const doc=new jsPDF({orientation:"landscape",unit:"pt",format:"a4"});
+  try{ doc.addFileToVFS("Carlito.ttf",CARLITO_R); doc.addFont("Carlito.ttf","Carlito","normal"); }catch(_e){}
   const pgW=doc.internal.pageSize.getWidth();
   try{ if(typeof LOGO!=="undefined" && LOGO){ const lw=74, lh=lw*LOGO_RATIO; doc.addImage(LOGO,"PNG",pgW-22-lw,10,lw,lh); } }catch(_e){}
   doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.setTextColor(31,80,55);
-  doc.text(`FRISCHPLANT  (${huRange(fromIso,toIso)})`,40,44);
+  doc.text("FRISCHPLANT",40,44); const _tw=doc.getTextWidth("FRISCHPLANT");
+  doc.setFont("helvetica","normal"); doc.setFontSize(13);
+  doc.text(`(${huRange(fromIso,toIso)})`,40+_tw+8,44);
   doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(40);
   doc.text(`Teljesítési igazolás száma: ${state.certNo||". . . ."}`,40,62);
-  doc.setFontSize(9); doc.setTextColor(90);
-  doc.text(`Össz óra: ${fmt(a.crew+a.adminTotal)}    |    Össz km: ${fmt(a.kmTotal)}    |    Csapadék: ${rainObj&&rainObj.ok?fmt(rainObj.total)+" mm":"—"}    |    Munkanap: ${a.filledDays}`,40,78);
+  doc.setFont("Carlito","normal"); doc.setFontSize(9); doc.setTextColor(90);
+  doc.text(`Össz óra: ${fmt(a.crew+a.adminTotal)}    |    Össz km: ${fmt(a.kmTotal)}    |    Csapadék: ${rainObj&&rainObj.ok?fmt(rainObj.total)+" mm":"—"}    |    Munkanap: ${a.filledDays}    |    Összmunkaerő: ${HEADS.length} fő / ${WHEADS.length} autó · szekventált`,40,78);
   doc.setTextColor(20);
-  const head=[["Nap","A","B","C","D","F","Munkaóra össz.","locs.","tány.","takar.","karó","felm.","QTA","kert.","admin","km","mm"]];
-  const body=[];
+  const head=[["Nap","A","B","C","D","Munkaóra össz.","locs.","tány.","takar.","karó","felm.","QTA","kert.","admin","km","mm"]];
+  const body=[]; const hz=v=>parseH(v)>0?v:"-";
   eachDate(fromIso,toIso,(date,d)=>{ const e=map[date]||blank(), rain=(rainObj&&rainObj.ok&&rainObj.byDay[date]!=null)?rainObj.byDay[date]:null;
-    body.push([`${pad(d.getMonth()+1)}.${pad(d.getDate())}`,e.head_a||"",e.head_b||"",e.head_c||"",e.head_d||"",e.r_admin||"",fmt(headSum(e)+adminH(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):"")]); });
-  const foot=[["Össz.","","","","","",fmt(a.crew+a.adminTotal),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):"")]];
+    body.push([`${pad(d.getMonth()+1)}.${pad(d.getDate())}`,hz(e.head_a),hz(e.head_b),hz(e.head_c),hz(e.head_d),fmt(headSum(e)+adminH(e)),e.r_locsolas||"",e.r_tanyerozas||"",e.r_takaritas||"",e.r_karozas||"",e.r_felmeres||"",e.r_qta||"",e.r_kerteszeti||"",e.r_admin||"",e.km||"",(rain!=null?fmt(rain):"")]); });
+  const foot=[["Össz.","","","","",fmt(a.crew+a.adminTotal),fmt(a.actBy.r_locsolas),fmt(a.actBy.r_tanyerozas),fmt(a.actBy.r_takaritas),fmt(a.actBy.r_karozas),fmt(a.actBy.r_felmeres),fmt(a.actBy.r_qta),fmt(a.actBy.r_kerteszeti),fmt(a.adminTotal),fmt(a.kmTotal),(rainObj&&rainObj.ok?fmt(rainObj.total):"")]];
   const PURPLE=[124,58,173];
   doc.autoTable({head,body,foot,startY:100,theme:"grid",showFoot:"lastPage",
-    styles:{fontSize:7,cellPadding:2,halign:"center",lineColor:[210,210,210],lineWidth:0.1},
+    styles:{font:"helvetica",fontSize:7,cellPadding:2,halign:"center",lineColor:[210,210,210],lineWidth:0.1},
     headStyles:{fillColor:[47,125,79],halign:"center",fontStyle:"bold"},
     footStyles:{fillColor:[230,240,233],textColor:20,fontStyle:"bold"},
-    columnStyles:{0:{cellWidth:28},6:{fontStyle:"bold"}},
-    didParseCell:function(dt){ if(dt.section==="head" && dt.column.index===6){ dt.cell.styles.fillColor=PURPLE; } },
-    didDrawCell:function(dt){ if(dt.column.index===6 || dt.column.index===14){ const C=dt.cell; doc.setDrawColor(70,70,70); doc.setLineWidth(1.3); doc.line(C.x+C.width,C.y,C.x+C.width,C.y+C.height); doc.setLineWidth(0.1); doc.setDrawColor(210,210,210); } }
+    columnStyles:{0:{cellWidth:28},5:{fontStyle:"bold"}},
+    didParseCell:function(dt){ if(dt.section==="head" && dt.column.index===5){ dt.cell.styles.fillColor=PURPLE; } },
+    didDrawCell:function(dt){ if(dt.column.index===5 || dt.column.index===13){ const C=dt.cell; doc.setDrawColor(70,70,70); doc.setLineWidth(1.3); doc.line(C.x+C.width,C.y,C.x+C.width,C.y+C.height); doc.setLineWidth(0.1); doc.setDrawColor(210,210,210); } }
   });
   try{
     const _png=chartToPNG(map,rainObj,fromIso,toIso);
     if(_png){
       const pgH=doc.internal.pageSize.getHeight();
       let _y=(doc.lastAutoTable?doc.lastAutoTable.finalY:100)+18;
-      const _cw=Math.min(540,pgW-80), _ch=_cw*0.3;
+      const _cw=Math.min(540,pgW-80), _ch=_cw*0.29;
       if(_y+_ch+26>pgH-26){ doc.addPage(); _y=40; }
-      doc.setFont("helvetica","bold"); doc.setFontSize(11); doc.setTextColor(31,80,55);
-      doc.text("Csapadék és locsolás",40,_y); _y+=8;
+      doc.setFont("Carlito","normal"); doc.setFontSize(11); doc.setTextColor(31,80,55);
+      doc.text("Csapadék, locsolás és hőmérséklet",40,_y); _y+=8;
       doc.addImage(_png,"PNG",40,_y,_cw,_ch);
-      doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(120);
-      doc.text("Zöld oszlop: csapadék (mm). Kék oszlop: locsolás (óra).",40,_y+_ch+12);
+      doc.setFont("Carlito","normal"); doc.setFontSize(8); doc.setTextColor(120);
+      doc.text("Zöld oszlop: csapadék (mm). Kék oszlop: locsolás (óra). Narancs oszlop: átlaghőmérséklet (°C).",40,_y+_ch+12);
       doc.setTextColor(20);
     }
   }catch(_e){}
