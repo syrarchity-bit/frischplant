@@ -510,6 +510,13 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:12px 0}
 .segbtn{flex:1;padding:10px 8px;border:none;background:var(--surface);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer}
 .segbtn.on{background:var(--accent);color:#fff}
+.autohint{font-size:12px;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin:8px 0}
+.wrow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0}
+.wd{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px}
+.wvals{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted)}
+.wvals b{color:var(--accent)}
+.wv{font-size:13px;color:var(--muted)}
+.wnote{margin-top:6px;font-size:12.5px;color:var(--muted);white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -1011,7 +1018,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-21-g";
+const APP_VERSION = "2026-06-24-a";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1060,10 +1067,12 @@ const isMissed = date => { const e=state.entries[date]||blank(); const d=new Dat
 const isCurMonth = ()=> state.viewY>curY || (state.viewY===curY && state.viewM>=curM);
 
 /* ---------- store ---------- */
+function curTable(){ if(state.role==="admin") return state.adminTab==="worker"?"entries":"admin_entries"; if(state.role==="client") return "admin_entries"; return "entries"; }
+function seededFrac(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; } return (h%1000)/1000; }
 async function loadMonth(y,m){
   if(state.mode!=="live") return;
   const dim=daysIn(y,m), first=`${y}-${pad(m)}-01`, last=`${y}-${pad(m)}-${pad(dim)}`;
-  const {data,error}=await state.client.from("entries").select("*").gte("entry_date",first).lte("entry_date",last);
+  const {data,error}=await state.client.from(curTable()).select("*").gte("entry_date",first).lte("entry_date",last);
   state.entries={};
   if(!error && data) data.forEach(r=>{ const e=blank(); ALL.forEach(k=>e[k]=r[k]||""); e.km=r.km||""; e.note=r.note||""; e.dayoff=r.dayoff||""; state.entries[r.entry_date]=e; });
 }
@@ -1092,10 +1101,14 @@ function rainAgg(){ const r=state.rain[rainKey()]; return r?r:{ok:false,byDay:{}
 
 async function save(date){
   const e = state.entries[date] || (state.entries[date]=blank());
+  if(curTable()==="entries" && state.role==="user" && !isDayOff(e)){
+    const _mh=parseH(e.head_a)+parseH(e.head_b);
+    e.r_locsolas = _mh>0 ? String(Math.round(_mh*(0.95+seededFrac(date)*0.05)*4)/4) : "";
+  }
   if(state.mode==="live"){
     const row={entry_date:date,note:e.note,km:e.km,dayoff:e.dayoff,updated_by:state.email,updated_at:new Date().toISOString()};
     ALL.forEach(k=>row[k]=e[k]);
-    const {error}=await state.client.from("entries").upsert(row,{onConflict:"entry_date"});
+    const {error}=await state.client.from(curTable()).upsert(row,{onConflict:"entry_date"});
     setStatus(date, error?"nem mentődött":"mentve ✓", error?"err":"ok");
   } else setStatus(date,"mentve ✓ (demó)","ok");
   render();
@@ -1137,6 +1150,14 @@ function editorHTML(date,locked){
   const tail = locked
     ? `<div class="locknote">🔒 Előbb töltsd ki és mentsd a tegnapi napot.</div>`
     : `<div class="saverow"><span class="status" data-status="${date}"></span><button class="btn save" data-save="${date}">Mentés</button></div>${offBtn}`;
+  if(isWorker){
+    return `
+    <div class="grp"><div class="grp-lbl">Munkaóra (A és B)</div><div class="hgrid">${WHEADS.map(k=>hf(date,k,dis)).join("")}</div>
+      <div class="subtotal" data-headtotal="${date}">Munkaóra összesen: ${fmt(parseH(e.head_a)+parseH(e.head_b))} óra</div></div>
+    <div class="grp"><div class="grp-lbl">Megjegyzés — mivel, mennyit foglalkoztak</div><textarea class="note" data-date="${date}" data-field="note" rows="3"${dis}>${esc(e.note)}</textarea></div>
+    <div class="autohint">A locsolás óráit a program automatikusan számolja a munkaóra alapján.</div>
+    ${tail}`;
+  }
   return `
     <div class="grp"><div class="grp-lbl">Óraszám tevékenységenként</div><div class="hgrid">${ACT.map(k=>hf(date,k,dis)).join("")}</div>
       <div class="subtotal" data-acttotal="${date}">Tevékenységek összesen: ${fmt(workSum(e))} óra</div></div>
@@ -1174,6 +1195,7 @@ function demoBar(){ if(state.mode==="live") return "";
 function adminNav(active){
   return `<div class="adminnav"><span class="toggle">
     <button data-tab="days" aria-pressed="${active==='days'}">Napok</button>
+    <button data-tab="worker" aria-pressed="${active==='worker'}">Munkatárs</button>
     <button data-tab="summary" aria-pressed="${active==='summary'}">Összesítés</button></span></div>`;}
 function monthNav(){
   return `<div class="mnav"><button data-mnav="-1" title="előző hónap">‹</button>
@@ -1234,7 +1256,7 @@ function workerSummaryCard(a){
   return `<div class="sum-card"><h4>Havi összesítés — ${huMonth(curY,curM)}</h4>
     <div class="sumline"><span class="l">A össz. munkaóra</span><span class="v">${fmt(a.hA)} ó</span></div>
     <div class="sumline"><span class="l">B össz. munkaóra</span><span class="v">${fmt(a.hB)} ó</span></div>
-    <div class="sumline"><span class="l">Össz. autózott km</span><span class="v">${fmt(a.kmTotal)} km</span></div>
+    <div class="sumline"><span class="l">Locsolás összesen (auto)</span><span class="v">${fmt(a.actBy.r_locsolas)} ó</span></div>
     <div class="sumline"><span class="l">Szabadnap (A és B)</span><span class="v">${a.dayOffDays} nap</span></div></div>`;
 }
 function userView(){
@@ -1267,6 +1289,21 @@ function adminView(){
   for(let n=1;n<=dim;n++) rows+=adminRow(n);
   return headerHTML()+demoBar()+adminNav('days')+monthNav()+exportRow()+
     `<div class="section-lbl">teljes hónap · ${dim} nap</div>`+rows+`<div class="foot">FRISCHPLANT · adminisztrátori nézet</div>`;
+}
+function workerView(){
+  let rows=""; const dim=daysIn(state.viewY,state.viewM);
+  for(let n=1;n<=dim;n++){
+    const date=vDate(n), e=state.entries[date]||blank();
+    if(!hasHours(e) && !isDayOff(e)) continue;
+    const d=new Date(date+"T00:00:00");
+    if(isDayOff(e)){ rows+=`<div class="wrow"><div class="wd">${n}. ${huWeek(d)} · ${huFull(d)}</div><div class="wv">🌴 szabadnap (A és B)</div></div>`; continue; }
+    rows+=`<div class="wrow"><div class="wd">${n}. ${huWeek(d)} · ${huFull(d)}</div>
+      <div class="wvals"><span>A: <b>${fmt(parseH(e.head_a))}</b> ó</span><span>B: <b>${fmt(parseH(e.head_b))}</b> ó</span><span>locsolás: <b>${fmt(parseH(e.r_locsolas))}</b> ó</span></div>
+      ${e.note?`<div class="wnote">${esc(e.note)}</div>`:""}</div>`;
+  }
+  if(!rows) rows=`<div class="section-lbl">Ebben a hónapban még nincs munkatársi bejegyzés.</div>`;
+  return headerHTML()+demoBar()+adminNav('worker')+monthNav()+
+    `<div class="section-lbl">Munkatárs adatbázisa · csak olvasás</div>`+rows+`<div class="foot">FRISCHPLANT · munkatárs napló (admin nézet)</div>`;
 }
 function summaryView(){
   const a=monthAgg();
@@ -1369,7 +1406,7 @@ function aggPeriod(map,fromIso,toIso){
 async function loadRangeEntries(fromIso,toIso){
   state.rangeEntries={};
   if(state.mode!=="live") return;
-  const {data,error}=await state.client.from("entries").select("*").gte("entry_date",fromIso).lte("entry_date",toIso);
+  const {data,error}=await state.client.from(curTable()).select("*").gte("entry_date",fromIso).lte("entry_date",toIso);
   if(!error && data) data.forEach(r=>{ const e=blank(); ALL.forEach(k=>e[k]=r[k]||""); e.km=r.km||""; e.note=r.note||""; e.dayoff=r.dayoff||""; state.rangeEntries[r.entry_date]=e; });
 }
 async function loadRainRange(fromIso,toIso){
@@ -1632,7 +1669,7 @@ function startScene(){
 function render(){
   const app=$("#app");
   if(state.mode==="live" && !state.email){ app.innerHTML=loginView(); bindTop(); bindLogin(); return; }
-  if(state.role==="admin") app.innerHTML = state.adminTab==="summary"?summaryView():adminView();
+  if(state.role==="admin") app.innerHTML = state.adminTab==="summary"?summaryView():(state.adminTab==="worker"?workerView():adminView());
   else if(state.role==="client") app.innerHTML = clientView();
   else app.innerHTML = userView();
   bindTop(); bindMain(); startScene();
@@ -1654,11 +1691,11 @@ function bindLogin(){
 }
 function updateTotals(date){const e=state.entries[date]||blank();
   document.querySelectorAll(`[data-acttotal="${date}"]`).forEach(el=>el.textContent=`Tevékenységek összesen: ${fmt(workSum(e))} óra`);
-  document.querySelectorAll(`[data-headtotal="${date}"]`).forEach(el=>el.textContent=`Fejenkénti összesen: ${fmt(visibleHeadSum(e))} óra`);}
+  document.querySelectorAll(`[data-headtotal="${date}"]`).forEach(el=>el.textContent=`${state.role==="user"?"Munkaóra összesen: ":"Fejenkénti összesen: "}${fmt(visibleHeadSum(e))} óra`);}
 function setRole(r){ state.role=r; if(r!=="admin") state.adminTab="days"; state.openDate=null; state.viewY=curY; state.viewM=curM; refresh(); }
 function bindMain(){
   document.querySelectorAll(".demo-bar .toggle button[data-role]").forEach(b=>b.onclick=()=>setRole(b.dataset.role));
-  document.querySelectorAll(".adminnav button[data-tab]").forEach(b=>b.onclick=()=>{state.adminTab=b.dataset.tab;state.openDate=null;render();});
+  document.querySelectorAll(".adminnav button[data-tab]").forEach(b=>b.onclick=()=>{state.adminTab=b.dataset.tab;state.openDate=null;refresh();});
   document.querySelectorAll("[data-mnav]").forEach(b=>b.onclick=()=>{ let m=state.viewM+parseInt(b.dataset.mnav,10),y=state.viewY; if(m<1){m=12;y--;} if(m>12){m=1;y++;} if(y>curY||(y===curY&&m>curM)) return; state.viewY=y;state.viewM=m;state.openDate=null;refresh(); });
   document.querySelectorAll("[data-export]").forEach(b=>b.onclick=()=>{ b.dataset.export==="csv"?exportCSV():exportPDF(); });
   document.querySelectorAll("[data-period]").forEach(b=>b.onclick=()=>doRangeQuick(b.dataset.period));
