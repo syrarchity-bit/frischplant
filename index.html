@@ -502,6 +502,7 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .chartlegend i{display:inline-block;vertical-align:middle;margin-right:5px}
 .lg-rain{width:11px;height:11px;border-radius:2px;background:#6aa840}
 .lg-water{width:11px;height:11px;border-radius:2px;background:#4a90c2}
+.lg-sun{width:13px;height:3px;border-radius:2px;background:#e0a422}
 .chartbox{width:100%;color:var(--ink)}
 .sum-card.invoice .rate-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .sum-card.invoice .rate-row input{width:130px;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:10px;padding:9px 10px;font-size:15px;text-align:right}
@@ -524,6 +525,11 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .wxm-v.sun{color:#e0a422}
 .wxm-v.temp{color:#e07b39}
 .wxm-l{font-size:10px;color:var(--muted);margin-top:3px}
+.crewbadge{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin:2px 0 12px}
+.crewbadge .cb-l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.crewbadge .cb-p{font-size:15px;font-weight:700;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:3px 10px;font-variant-numeric:tabular-nums}
+.crewbadge .cb-sep{color:var(--muted);font-weight:600}
+.crewbadge .cb-tag{font-size:11px;color:#b9791a;border:1px solid rgba(224,164,34,.45);border-radius:20px;padding:2px 10px;background:rgba(224,164,34,.10)}
 </style>
 </head>
 <body>
@@ -1319,6 +1325,7 @@ function workerView(){
   return headerHTML()+demoBar()+adminNav('worker')+monthNav()+
     `<div class="section-lbl">Munkatárs adatbázisa · csak olvasás</div>`+rows+`<div class="foot">FRISCHPLANT · munkatárs napló (admin nézet)</div>`;
 }
+function crewBadge(){ return `<div class="crewbadge"><span class="cb-l">Összmunkaerő</span><span class="cb-p">${HEADS.length} fő</span><span class="cb-sep">/</span><span class="cb-p">${WHEADS.length} autó</span><span class="cb-tag">szekventált</span></div>`; }
 function summaryView(){
   const a=monthAgg();
   const topAct=ACT.map(k=>({label:LABEL[k],h:a.actBy[k]})).reduce((p,c)=>c.h>p.h?c:p,{h:0,label:'—'});
@@ -1341,7 +1348,7 @@ function summaryView(){
        <div class="t"><div class="l">Adminisztráció</div><div class="v">${fmt(a.adminTotal)} ó</div></div>
        <div class="t"><div class="l">Autózott km</div><div class="v">${fmt(a.kmTotal)} km</div></div>
      </div></div>`;
-  return headerHTML()+demoBar()+adminNav('summary')+seg+(range?rangeBlock(true):monthHTML)+
+  return headerHTML()+demoBar()+adminNav('summary')+seg+crewBadge()+(range?rangeBlock(true):monthHTML)+
     `<div class="foot">FRISCHPLANT · havi összesítő, csak admin</div>`;
 }
 function clientView(){
@@ -1464,37 +1471,41 @@ function rainCardG(a,r,fromIso,toIso){
 
 function niceMax(v){ if(!isFinite(v)||v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))), nn=v/p; let m; if(nn<=1)m=1; else if(nn<=2)m=2; else if(nn<=2.5)m=2.5; else if(nn<=5)m=5; else m=10; return m*p; }
 function rainChartSVG(map,r,fromIso,toIso){
-  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas)}); });
+  const pts=[]; eachDate(fromIso,toIso,(date,d)=>{ pts.push({n:d.getDate(),mm:(r&&r.ok&&r.byDay[date]!=null)?r.byDay[date]:0,loc:parseH((map[date]||{}).r_locsolas),sun:(r&&r.ok&&r.sunByDay&&r.sunByDay[date]!=null)?r.sunByDay[date]:null}); });
   if(pts.length===0) return `<div class="big-sub">Nincs adat az időszakra.</div>`;
   if(pts.length>45) return `<div class="big-sub">Az időszak túl hosszú a napi diagramhoz (max ~45 nap). Szűkítsd a tartományt a grafikonhoz.</div>`;
   const W=760,H=210,padL=42,padR=42,padT=18,padB=22, innerW=W-padL-padR, innerH=H-padT-padB, n=pts.length;
-  const RAIN="#6aa840", WATER="#4a90c2", base=padT+innerH;
-  const maxMM=niceMax(Math.max.apply(null,pts.map(p=>p.mm))), maxLoc=niceMax(Math.max.apply(null,pts.map(p=>p.loc)));
+  const RAIN="#6aa840", WATER="#4a90c2", SUN="#e0a422", base=padT+innerH;
+  const maxMM=niceMax(Math.max.apply(null,pts.map(p=>p.mm)));
+  const maxRight=niceMax(Math.max(Math.max.apply(null,pts.map(p=>p.loc)), Math.max.apply(null,pts.map(p=>p.sun||0))));
   const slot=innerW/n, bw=Math.max(2.5,Math.min(13,slot*0.34)), gap=bw*0.25;
-  const yMM=v=>base-(v/maxMM)*innerH, yLoc=v=>base-(v/maxLoc)*innerH;
+  const yMM=v=>base-(v/maxMM)*innerH, yR=v=>base-(v/maxRight)*innerH;
   let grid="",bars="",xlab="";
   for(let k=0;k<=4;k++){ const f=k/4, y=base-f*innerH;
     grid+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-opacity="0.10"/>`;
     grid+=`<text x="${padL-5}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${RAIN}" text-anchor="end">${fmt(maxMM*f)}</text>`;
-    grid+=`<text x="${W-padR+5}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">${fmt(maxLoc*f)}</text>`;
+    grid+=`<text x="${W-padR+5}" y="${(y+3).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">${fmt(maxRight*f)}</text>`;
   }
   const step=n<=16?1:Math.ceil(n/12);
+  let sunPath="",sunDots="";
   pts.forEach((p,i)=>{ const cx=padL+slot*i+slot/2, gx=cx-bw-gap/2, kx=cx+gap/2;
     if(p.mm>0){ const y=yMM(p.mm); bars+=`<rect x="${gx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.5" fill="${RAIN}"/>`; }
-    if(p.loc>0){ const y=yLoc(p.loc); bars+=`<rect x="${kx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.5" fill="${WATER}"/>`; }
+    if(p.loc>0){ const y=yR(p.loc); bars+=`<rect x="${kx.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(base-y).toFixed(1)}" rx="1.5" fill="${WATER}"/>`; }
+    if(p.sun!=null){ const sy=yR(p.sun); sunPath+=(sunPath?" L":"M")+cx.toFixed(1)+" "+sy.toFixed(1); sunDots+=`<circle cx="${cx.toFixed(1)}" cy="${sy.toFixed(1)}" r="2.1" fill="${SUN}"/>`; }
     if(i%step===0) xlab+=`<text x="${cx.toFixed(1)}" y="${H-7}" font-size="9" fill="#8aa0b4" text-anchor="middle">${p.n}</text>`;
   });
+  const sunLine = sunPath?`<path d="${sunPath}" fill="none" stroke="${SUN}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${sunDots}`:"";
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img">
-    ${grid}${bars}
+    ${grid}${bars}${sunLine}
     <text x="${padL-5}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${RAIN}" text-anchor="end">mm</text>
     <text x="${W-padR+5}" y="${(padT-6).toFixed(1)}" font-size="8.5" fill="${WATER}" text-anchor="start">óra</text>
     ${xlab}</svg>`;
 }
 function chartCard(map,r,fromIso,toIso){
-  return `<div class="sum-card"><h4>Csapadék és locsolás</h4>
-    <div class="chartlegend"><span><i class="lg-rain"></i> csapadék (mm)</span><span><i class="lg-water"></i> locsolás (ó)</span></div>
+  return `<div class="sum-card"><h4>Csapadék, locsolás és napsütés</h4>
+    <div class="chartlegend"><span><i class="lg-rain"></i> csapadék (mm)</span><span><i class="lg-water"></i> locsolás (ó)</span><span><i class="lg-sun"></i> napsütés (ó)</span></div>
     <div class="chartbox">${rainChartSVG(map,r,fromIso,toIso)}</div>
-    <div class="big-sub">Zöld oszlop: napi csapadék (mm). Kék oszlop: napi locsolás (óra).</div></div>`;
+    <div class="big-sub">Zöld oszlop: napi csapadék (mm). Kék oszlop: napi locsolás (óra). Narancs vonal: napi napsütés (óra).</div></div>`;
 }
 function monthChartCard(){ const y=state.viewY,m=state.viewM,from=`${y}-${pad(m)}-01`,to=isCurMonth()?TODAY:`${y}-${pad(m)}-${pad(daysIn(y,m))}`; return chartCard(state.entries,rainAgg(),from,to); }
 function chartToPNG(map,r,fromIso,toIso){
