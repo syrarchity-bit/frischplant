@@ -517,6 +517,13 @@ input:disabled,textarea:disabled{opacity:.5;cursor:not-allowed;background:var(--
 .wvals b{color:var(--accent)}
 .wv{font-size:13px;color:var(--muted)}
 .wnote{margin-top:6px;font-size:12.5px;color:var(--muted);white-space:pre-wrap}
+.wx-metrics{display:flex;gap:8px;margin:4px 0 6px}
+.wxm{flex:1;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 4px}
+.wxm-v{font-size:18px;font-weight:700;line-height:1.1}
+.wxm-v.rain{color:#4a90c2}
+.wxm-v.sun{color:#e0a422}
+.wxm-v.temp{color:#e07b39}
+.wxm-l{font-size:10px;color:var(--muted);margin-top:3px}
 </style>
 </head>
 <body>
@@ -1018,7 +1025,7 @@ function brekuszScene(){ var t=document.getElementById("bkSceneTpl"); return t?t
 function suniScene(){ var t=document.getElementById("snSceneTpl"); return t?t.innerHTML:""; }
 function harkalyScene(){ var t=document.getElementById("hkSceneTpl"); return t?t.innerHTML:""; }
 function headerMark(){ return (state.mode==="live" && state.email) ? brekuszScene() : brekusz("0 0 100 71","bk-mark"); }
-const APP_VERSION = "2026-06-24-a";
+const APP_VERSION = "2026-06-24-b";
 function showUpdate(){ var el=document.getElementById("bkUpdate"); if(el && !el.classList.contains("show")) el.classList.add("show"); }
 async function checkUpdate(){
   if(state.mode!=="live") return;
@@ -1086,14 +1093,14 @@ async function loadRain(y,m){
   const lat=CONFIG.RAIN_LAT, lon=CONFIG.RAIN_LON, tz="Europe%2FBudapest";
   const useArchive = monthEnd < new Date(todayD.getTime()-6*86400000);
   const base = useArchive ? "https://archive-api.open-meteo.com/v1/archive" : "https://api.open-meteo.com/v1/forecast";
-  const url=`${base}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${endStr}&daily=precipitation_sum&timezone=${tz}`;
+  const url=`${base}?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${endStr}&daily=precipitation_sum,sunshine_duration,temperature_2m_mean&timezone=${tz}`;
   try{
     const res=await fetch(url); const j=await res.json();
-    const days=(j.daily&&j.daily.time)||[], vals=(j.daily&&j.daily.precipitation_sum)||[];
-    const byDay={}; let total=0,rainy=0;
-    days.forEach((dt,i)=>{ const v=vals[i]; if(v!=null){ byDay[dt]=v; total+=v; if(v>=1) rainy++; } });
-    state.rain[key]={byDay,total:Math.round(total*10)/10,rainy,ok:true};
-  }catch(err){ state.rain[key]={byDay:{},total:0,rainy:0,ok:false}; }
+    const days=(j.daily&&j.daily.time)||[], vals=(j.daily&&j.daily.precipitation_sum)||[], sun=(j.daily&&j.daily.sunshine_duration)||[], tmp=(j.daily&&j.daily.temperature_2m_mean)||[];
+    const byDay={}, sunByDay={}, tempByDay={}; let total=0,rainy=0,sunTotal=0,tSum=0,tN=0;
+    days.forEach((dt,i)=>{ const v=vals[i]; if(v!=null){ byDay[dt]=v; total+=v; if(v>=1) rainy++; } const su=sun[i]; if(su!=null){ const h=su/3600; sunByDay[dt]=h; sunTotal+=h; } const tt=tmp[i]; if(tt!=null){ tempByDay[dt]=tt; tSum+=tt; tN++; } });
+    state.rain[key]={byDay,sunByDay,tempByDay,total:Math.round(total*10)/10,rainy,sunTotal:Math.round(sunTotal*10)/10,tempMean:(tN?Math.round(tSum/tN*10)/10:null),ok:true};
+  }catch(err){ state.rain[key]={byDay:{},sunByDay:{},tempByDay:{},total:0,rainy:0,sunTotal:0,tempMean:null,ok:false}; }
 }
 function rainKey(){return `${state.viewY}-${pad(state.viewM)}`;}
 function rainFor(date){ const r=state.rain[rainKey()]; return (r&&r.ok&&(date in r.byDay))?r.byDay[date]:null; }
@@ -1232,15 +1239,22 @@ function kmCard(a){ const avg=a.filledDays?a.kmTotal/a.filledDays:0;
   return `<div class="sum-card"><h4>Autózott kilométer</h4><div class="big-num">${fmt(a.kmTotal)} km</div><div class="big-sub">napi átlag ${fmt(avg)} km · ${a.filledDays} munkanap</div></div>`; }
 function rainCard(a){
   const r=rainAgg();
-  if(!r.ok) return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4><div class="big-sub">A csapadékadat jelenleg nem elérhető.</div></div>`;
+  if(!r.ok) return `<div class="sum-card"><h4>Időjárás — Budapest, II. kerület</h4><div class="big-sub">Az időjárási adat jelenleg nem elérhető.</div></div>`;
   const y=state.viewY,m=state.viewM,dim=daysIn(y,m); let list="";
-  for(let n=1;n<=dim;n++){ const date=`${y}-${pad(m)}-${pad(n)}`, v=r.byDay[date];
-    if(v!=null && v>0){ const d=new Date(date+"T00:00:00"); list+=`<div class="dl"><span class="dd">${pad(n)}. ${huWeek(d).slice(0,3)}</span><span class="dr">${fmt(v)} mm</span></div>`; } }
-  const listHTML = list?`<div class="daylist">${list}</div>`:`<div class="big-sub">Nem volt mérhető csapadék ebben az időszakban.</div>`;
-  return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4>
-    <div class="big-num rain">${fmt(r.total)} mm</div><div class="big-sub">${r.rainy} esős nap (≥ 1 mm) a hónapban</div>
+  for(let n=1;n<=dim;n++){ const date=`${y}-${pad(m)}-${pad(n)}`, su=r.sunByDay?r.sunByDay[date]:null, v=r.byDay[date]; const d=new Date(date+"T00:00:00");
+    if(su==null && !(v>0)) continue;
+    const sT=su!=null?`☀ ${fmt(su)} ó`:"", rT=(v!=null&&v>0)?`☔ ${fmt(v)} mm`:"";
+    list+=`<div class="dl"><span class="dd">${pad(n)}. ${huWeek(d).slice(0,3)}</span><span class="dr">${sT}${(sT&&rT)?" · ":""}${rT}</span></div>`; }
+  const listHTML = list?`<div class="daylist">${list}</div>`:`<div class="big-sub">Nincs időjárási adat ebben az időszakban.</div>`;
+  return `<div class="sum-card"><h4>Időjárás — Budapest, II. kerület</h4>
+    <div class="wx-metrics">
+      <div class="wxm"><div class="wxm-v rain">${fmt(r.total)}</div><div class="wxm-l">csapadék (mm)</div></div>
+      <div class="wxm"><div class="wxm-v sun">${(r.sunByDay&&Object.keys(r.sunByDay).length)?fmt(r.sunTotal||0):"—"}</div><div class="wxm-l">napsütés (óra)</div></div>
+      <div class="wxm"><div class="wxm-v temp">${r.tempMean!=null?fmt(r.tempMean)+"°":"—"}</div><div class="wxm-l">átlaghőmérséklet</div></div>
+    </div>
+    <div class="big-sub">${r.rainy} esős nap (≥ 1 mm) · napi bontás lent: napsütés és csapadék</div>
     ${listHTML}
-    <div class="sum-total">Locsolás összesen ${fmt(a.actBy.r_locsolas)} ó — a csapadékos napokon jellemzően kevesebb az öntözés.</div></div>`;
+    <div class="sum-total">Locsolás összesen ${fmt(a.actBy.r_locsolas)} ó — a csapadékos, kevés napsütésű napokon jellemzően kevesebb az öntözés.</div></div>`;
 }
 
 /* ---------- nézetek ---------- */
@@ -1416,14 +1430,14 @@ async function loadRainRange(fromIso,toIso){
   if(new Date(endStr+"T00:00:00") < new Date(fromIso+"T00:00:00")){ state.rangeRain={byDay:{},total:0,rainy:0,ok:true}; return; }
   const useArchive = endD < new Date(todayD.getTime()-6*86400000);
   const base = useArchive ? "https://archive-api.open-meteo.com/v1/archive" : "https://api.open-meteo.com/v1/forecast";
-  const url=`${base}?latitude=${lat}&longitude=${lon}&start_date=${fromIso}&end_date=${endStr}&daily=precipitation_sum&timezone=${tz}`;
+  const url=`${base}?latitude=${lat}&longitude=${lon}&start_date=${fromIso}&end_date=${endStr}&daily=precipitation_sum,sunshine_duration,temperature_2m_mean&timezone=${tz}`;
   try{
     const res=await fetch(url); const j=await res.json();
-    const days=(j.daily&&j.daily.time)||[], vals=(j.daily&&j.daily.precipitation_sum)||[];
-    const byDay={}; let total=0,rainy=0;
-    days.forEach((dt,i)=>{ const v=vals[i]; if(v!=null){ byDay[dt]=v; total+=v; if(v>=1) rainy++; } });
-    state.rangeRain={byDay,total:Math.round(total*10)/10,rainy,ok:true};
-  }catch(err){ state.rangeRain={byDay:{},total:0,rainy:0,ok:false}; }
+    const days=(j.daily&&j.daily.time)||[], vals=(j.daily&&j.daily.precipitation_sum)||[], sun=(j.daily&&j.daily.sunshine_duration)||[], tmp=(j.daily&&j.daily.temperature_2m_mean)||[];
+    const byDay={}, sunByDay={}, tempByDay={}; let total=0,rainy=0,sunTotal=0,tSum=0,tN=0;
+    days.forEach((dt,i)=>{ const v=vals[i]; if(v!=null){ byDay[dt]=v; total+=v; if(v>=1) rainy++; } const su=sun[i]; if(su!=null){ const h=su/3600; sunByDay[dt]=h; sunTotal+=h; } const tt=tmp[i]; if(tt!=null){ tempByDay[dt]=tt; tSum+=tt; tN++; } });
+    state.rangeRain={byDay,sunByDay,tempByDay,total:Math.round(total*10)/10,rainy,sunTotal:Math.round(sunTotal*10)/10,tempMean:(tN?Math.round(tSum/tN*10)/10:null),ok:true};
+  }catch(err){ state.rangeRain={byDay:{},sunByDay:{},tempByDay:{},total:0,rainy:0,sunTotal:0,tempMean:null,ok:false}; }
 }
 function curMonthFrom(){ return `${curY}-${pad(curM)}-01`; }
 function huDate(isoStr){ const d=new Date(isoStr+"T00:00:00"); return `${d.getFullYear()}. ${pad(d.getMonth()+1)}. ${pad(d.getDate())}.`; }
@@ -1431,14 +1445,21 @@ function huRange(fromIso,toIso){ const f=new Date(fromIso+"T00:00:00"), t=new Da
 function formatHUF(n){ n=Math.round(n); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g," ")+" Ft"; }
 
 function rainCardG(a,r,fromIso,toIso){
-  if(!r||!r.ok) return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4><div class="big-sub">A csapadékadat jelenleg nem elérhető.</div></div>`;
+  if(!r||!r.ok) return `<div class="sum-card"><h4>Időjárás — Budapest, II. kerület</h4><div class="big-sub">Az időjárási adat jelenleg nem elérhető.</div></div>`;
   let list="";
-  eachDate(fromIso,toIso,(date,d)=>{ const v=r.byDay[date]; if(v!=null && v>0) list+=`<div class="dl"><span class="dd">${pad(d.getMonth()+1)}.${pad(d.getDate())}</span><span class="dr">${fmt(v)} mm</span></div>`; });
-  const listHTML = list?`<div class="daylist">${list}</div>`:`<div class="big-sub">Nem volt mérhető csapadék ebben az időszakban.</div>`;
-  return `<div class="sum-card"><h4>Csapadék — Budapest, II. kerület</h4>
-    <div class="big-num rain">${fmt(r.total)} mm</div><div class="big-sub">${r.rainy} esős nap (≥ 1 mm) az időszakban</div>
+  eachDate(fromIso,toIso,(date,d)=>{ const su=r.sunByDay?r.sunByDay[date]:null, v=r.byDay[date]; if(su==null && !(v>0)) return;
+    const sT=su!=null?`☀ ${fmt(su)} ó`:"", rT=(v!=null&&v>0)?`☔ ${fmt(v)} mm`:"";
+    list+=`<div class="dl"><span class="dd">${pad(d.getMonth()+1)}.${pad(d.getDate())}</span><span class="dr">${sT}${(sT&&rT)?" · ":""}${rT}</span></div>`; });
+  const listHTML = list?`<div class="daylist">${list}</div>`:`<div class="big-sub">Nincs időjárási adat ebben az időszakban.</div>`;
+  return `<div class="sum-card"><h4>Időjárás — Budapest, II. kerület</h4>
+    <div class="wx-metrics">
+      <div class="wxm"><div class="wxm-v rain">${fmt(r.total)}</div><div class="wxm-l">csapadék (mm)</div></div>
+      <div class="wxm"><div class="wxm-v sun">${(r.sunByDay&&Object.keys(r.sunByDay).length)?fmt(r.sunTotal||0):"—"}</div><div class="wxm-l">napsütés (óra)</div></div>
+      <div class="wxm"><div class="wxm-v temp">${r.tempMean!=null?fmt(r.tempMean)+"°":"—"}</div><div class="wxm-l">átlaghőmérséklet</div></div>
+    </div>
+    <div class="big-sub">${r.rainy} esős nap (≥ 1 mm) · napi bontás lent: napsütés és csapadék</div>
     ${listHTML}
-    <div class="sum-total">Locsolás összesen ${fmt(a.actBy.r_locsolas)} ó — a csapadékos napokon jellemzően kevesebb az öntözés.</div></div>`;
+    <div class="sum-total">Locsolás összesen ${fmt(a.actBy.r_locsolas)} ó — a csapadékos, kevés napsütésű napokon jellemzően kevesebb az öntözés.</div></div>`;
 }
 
 function niceMax(v){ if(!isFinite(v)||v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))), nn=v/p; let m; if(nn<=1)m=1; else if(nn<=2)m=2; else if(nn<=2.5)m=2.5; else if(nn<=5)m=5; else m=10; return m*p; }
